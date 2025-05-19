@@ -84,7 +84,7 @@ screenWidth = 320
 screenHeight = 480
 surface = pygame.display.set_mode((screenWidth, screenHeight))
 
-BGcolor = (0, 0, 185)
+BGcolor = (14, 0, 84)
 
 clock = pygame.time.Clock()
 cSpeed = 60
@@ -96,12 +96,21 @@ pygame.display.set_caption(title)
 playerMovingForwardSprite = pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha()
 playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha()
 playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/Arcade - Strikers 1945 3 Strikers 1999 - FA-18 Super Hornet(1)(1).png").convert_alpha()
-
+bullet_width = 2
+bullet_height = 2
+PlayerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
+PlayerBulletSprite.fill((199, 146, 0))
 
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, screenWidth/2, screenHeight/2)
 
+bullets = []
+shoot_timer = 0
+shoot_delay = 4 # frames between shots
+
 def Draw():
     surface.fill(BGcolor)
+    for bullet in bullets:
+        bullet.drawSprite()
     player.drawSprite()
 
 running = True
@@ -111,9 +120,24 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
+    # Check for shooting
+    shoot_timer += 1
+    if shoot_timer >= shoot_delay:
+        bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2
+        bullet_y = player.getYPos()
+        bullets.append(PlayerBullet(surface, PlayerBulletSprite, bullet_x, bullet_y))
+        shoot_timer = 0
+
+    # Update bullets
+    for bullet in bullets[:]:
+        bullet.Movement()
+        if bullet.getYPos() < -bullet_height:
+            bullets.remove(bullet)
 
     keys = pygame.key.get_pressed()
     player.Movement(keys)
     Draw()
     pygame.display.update()
     clock.tick(cSpeed)
+
+pygame.quit()
