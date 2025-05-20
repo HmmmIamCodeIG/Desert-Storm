@@ -75,6 +75,52 @@ class PlayerBullet():
         self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
 
 
+class Enemy():
+    def __init__(self, surface, sprite, xPos, yPos):
+        self.__surface = surface
+        self.__sprite = sprite
+        self.__xPos = xPos
+        self.__yPos = yPos
+        self.__speed = 5
+
+    def Movement(self):
+        self.__yPos += self.__speed
+
+    def getXPos(self):
+        return self.__xPos
+
+    def getYPos(self):
+        return self.__yPos
+
+    def getPos(self):
+        return (self.__xPos, self.__yPos)
+
+    def drawSprite(self):
+        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
+
+class PlayerMissile():
+    def __init__(self, surface, sprite, xPos, yPos):
+        self.__surface = surface
+        self.__sprite = sprite
+        self.__xPos = xPos
+        self.__yPos = yPos
+        self.__speed = 5
+
+    def Movement(self):
+        self.__yPos -= self.__speed
+
+    def getXPos(self):
+        return self.__xPos
+
+    def getYPos(self):
+        return self.__yPos
+
+    def getPos(self):
+        return (self.__xPos, self.__yPos)
+
+    def drawSprite(self):
+        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
+
 # initializing all imported pygame modules
 (numpass, numfail) = pygame.init()
 
@@ -95,17 +141,17 @@ pygame.display.set_caption(title)
 # Load both sprites
 playerMovingForwardSprite = pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha()
 playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha()
-playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/Arcade - Strikers 1945 3 Strikers 1999 - FA-18 Super Hornet(1)(1).png").convert_alpha()
+playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
 bullet_width = 2
-bullet_height = 2
-PlayerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
-PlayerBulletSprite.fill((199, 146, 0))
+bullet_height = 6
+playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
+playerBulletSprite.fill((199, 146, 0))
+playerEnemySprite = pygame.image.load("Intro/libraryofimages/enemy.png").convert_alpha()
 
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, screenWidth/2, screenHeight/2)
-
 bullets = []
 shoot_timer = 0
-shoot_delay = 4 # frames between shots
+shoot_delay = 8 # frames between shots
 
 def Draw():
     surface.fill(BGcolor)
@@ -123,16 +169,17 @@ while running:
     # Check for shooting
     shoot_timer += 1
     if shoot_timer >= shoot_delay:
-        bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2
+        bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2 # Center bullet on player
         bullet_y = player.getYPos()
-        bullets.append(PlayerBullet(surface, PlayerBulletSprite, bullet_x, bullet_y))
-        shoot_timer = 0
+        bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y)) # Create a new bullet
+        shoot_timer = 0 # Reset shoot timer 
 
     # Update bullets
     for bullet in bullets[:]:
         bullet.Movement()
-        if bullet.getYPos() < -bullet_height:
-            bullets.remove(bullet)
+        if bullet.getYPos() < -bullet_height: 
+            bullets.remove(bullet) # Remove bullet if it goes off screen
+
 
     keys = pygame.key.get_pressed()
     player.Movement(keys)
