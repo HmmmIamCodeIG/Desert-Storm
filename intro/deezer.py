@@ -103,14 +103,14 @@ playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movinglef
 playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
 bullet_width, bullet_height = 2, 6
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
-playerBulletSprite.fill((199, 146, 0))
+playerBulletSprite.fill((255, 255, 255))
 missile_width, missile_height = 3, 8
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
 playerMissileSprite.fill((255, 80, 0))
 enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
-enemyBullet_width, enemyBullet_height = 3, 8
+enemyBullet_width, enemyBullet_height = 2, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
-enemyBulletSprite.fill((40, 255, 255))
+enemyBulletSprite.fill((143, 110, 60))
 
 # Create player object, starting at the bottom center of the screen
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, screenWidth // 2, screenHeight - playerMovingForwardSprite.get_height())
@@ -190,7 +190,7 @@ while running:
         enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
         enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
         enemy_spawn_timer = 0
-        
+
     # Enemies and Enemy Shooting
     for enemy in enemies[:]:
         enemy.Movement() # Randomly allow enemy to shoot
