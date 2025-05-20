@@ -28,17 +28,14 @@ class Player(GameObject):
         self._default_sprite = moving_forward_sprite
         self._moving_left_sprite = moving_left_sprite
         self._moving_right_sprite = moving_right_sprite
-
+            
     def Movement(self, keysPressed):
         moved_left = False
         moved_right = False
-        moved_forward = False
         if keysPressed[pygame.K_UP] or keysPressed[pygame.K_w]:
             self._yPos -= self._speed
-            moved_forward = True
         if keysPressed[pygame.K_DOWN] or keysPressed[pygame.K_s]:
             self._yPos += self._speed
-            moved_forward = True
         if keysPressed[pygame.K_RIGHT] or keysPressed[pygame.K_d]:
             self._xPos += self._speed
             moved_right = True
@@ -46,16 +43,16 @@ class Player(GameObject):
             self._xPos -= self._speed
             moved_left = True
 
+        # make sure the player doesn't go off the screen
         self._xPos = max(0, min(self._xPos, self._surface.get_width() - self._sprite.get_width()))
-        self._yPos = self._surface.get_height() - self._sprite.get_height()
+        self._yPos = max(0, min(self._yPos, self._surface.get_height() - self._sprite.get_height()))
 
         if moved_left:
             self._sprite = self._moving_left_sprite
         elif moved_right:
             self._sprite = self._moving_right_sprite
         else:
-            self._sprite = self._default_sprite  
-
+            self._sprite = self._default_sprite
 class PlayerBullet(GameObject):
     def __init__(self, surface, sprite, xPos, yPos):
         super().__init__(surface, sprite, xPos, yPos, 10)
