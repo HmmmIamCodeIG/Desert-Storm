@@ -184,7 +184,28 @@ while running:
             missiles.remove(missile)  # Remove missile if it goes off screen
 
     # Enemy Spawning
+    enemy_spawn_timer += 0.8
+    if enemy_spawn_timer >= enemy_spawn_delay:
+        # Spawn an enemy at random X position at the top
+        enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
+        enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
+        enemy_spawn_timer = 0
+        
+    # Enemies and Enemy Shooting
+    for enemy in enemies[:]:
+        enemy.Movement() # Randomly allow enemy to shoot
+        if random.randint(0, enemy_shoot_delay-1) == 0:
+            ebullet_x = enemy.getXPos() + enemySprite.get_width() // 2 - enemyBullet_width // 2
+            ebullet_y = enemy.getYPos() + enemySprite.get_height()
+            enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y)) # Remove enemy if it moves off the bottom of the screen
+        if enemy.getYPos() > screenHeight:
+            enemies.remove(enemy)
 
+    # Enemy Bullets
+    for ebullet in enemyBullets[:]:
+        ebullet.Movement()
+        if ebullet.getYPos() > screenHeight:
+            enemyBullets.remove(ebullet) # Remove enemy bullet if it goes off screen
 
     Draw()
     pygame.display.update()
