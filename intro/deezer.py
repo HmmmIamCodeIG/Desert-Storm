@@ -32,6 +32,13 @@ class Player(GameObject):
     def Movement(self, keysPressed):
         moved_left = False
         moved_right = False
+        moved_forward = False
+        if keysPressed[pygame.K_UP] or keysPressed[pygame.K_w]:
+            self._yPos -= self._speed
+            moved_forward = True
+        if keysPressed[pygame.K_DOWN] or keysPressed[pygame.K_s]:
+            self._yPos += self._speed
+            moved_forward = True
         if keysPressed[pygame.K_RIGHT] or keysPressed[pygame.K_d]:
             self._xPos += self._speed
             moved_right = True
@@ -100,10 +107,10 @@ playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingri
 bullet_width, bullet_height = 2, 6
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
 playerBulletSprite.fill((199, 146, 0))
-missile_width, missile_height = 4, 16
+missile_width, missile_height = 3, 8
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
 playerMissileSprite.fill((255, 80, 0))
-enemySprite = pygame.image.load("Intro/libraryofimages/enemy.png").convert_alpha()
+enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
 enemyBullet_width, enemyBullet_height = 3, 8
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
 enemyBulletSprite.fill((40, 255, 255))
@@ -178,6 +185,9 @@ while running:
         missile.Movement()
         if missile.getYPos() < -missile_height:
             missiles.remove(missile)  # Remove missile if it goes off screen
+
+    # Enemy Spawning
+
 
     Draw()
     pygame.display.update()
