@@ -1,136 +1,81 @@
 import pygame
 import random
 
-# Classes 
+# Base class for all game objects
+class GameObject:
+    def __init__(self, surface, sprite, xPos, yPos, speed):
+        self._surface = surface
+        self._sprite = sprite
+        self._xPos = xPos
+        self._yPos = yPos
+        self._speed = speed
 
-class Player():
+    def getXPos(self):
+        return self._xPos
+
+    def getYPos(self):
+        return self._yPos
+
+    def getPos(self):
+        return (self._xPos, self._yPos)
+
+    def drawSprite(self):
+        self._surface.blit(self._sprite, (self._xPos, self._yPos))
+
+class Player(GameObject):
     def __init__(self, surface, moving_forward_sprite, moving_left_sprite, moving_right_sprite, xPos, yPos):
-        self.__surface = surface
-        self.__sprite = moving_forward_sprite 
-        self.__default_sprite = moving_forward_sprite
-        self.__moving_left_sprite = moving_left_sprite
-        self.__moving_right_sprite = moving_right_sprite
-        self.__xPos = xPos
-        self.__yPos = yPos
-        self.__speed = 5
+        super().__init__(surface, moving_forward_sprite, xPos, yPos, 5)
+        self._default_sprite = moving_forward_sprite
+        self._moving_left_sprite = moving_left_sprite
+        self._moving_right_sprite = moving_right_sprite
 
     def Movement(self, keysPressed):
         moved_left = False
         moved_right = False
         if keysPressed[pygame.K_RIGHT] or keysPressed[pygame.K_d]:
-            self.__xPos += self.__speed
+            self._xPos += self._speed
             moved_right = True
         elif keysPressed[pygame.K_LEFT] or keysPressed[pygame.K_a]:
-            self.__xPos -= self.__speed
+            self._xPos -= self._speed
             moved_left = True
 
-        self.__xPos = max(0, min(self.__xPos, self.__surface.get_width() - self.__sprite.get_width()))
-        self.__yPos = self.__surface.get_height() - self.__sprite.get_height()
+        self._xPos = max(0, min(self._xPos, self._surface.get_width() - self._sprite.get_width()))
+        self._yPos = self._surface.get_height() - self._sprite.get_height()
 
         if moved_left:
-            self.__sprite = self.__moving_left_sprite
+            self._sprite = self._moving_left_sprite
         elif moved_right:
-            self.__sprite = self.__moving_right_sprite
+            self._sprite = self._moving_right_sprite
         else:
-            self.__sprite = self.__default_sprite  
+            self._sprite = self._default_sprite  
 
-    def getXPos(self):
-        return self.__xPos
-
-    def getYPos(self):
-        return self.__yPos
-
-    def getPos(self):
-        return (self.__xPos, self.__yPos)
-
-    def drawSprite(self):
-        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
-
-class PlayerBullet():
+class PlayerBullet(GameObject):
     def __init__(self, surface, sprite, xPos, yPos):
-        self.__surface = surface
-        self.__sprite = sprite
-        self.__xPos = xPos
-        self.__yPos = yPos
-        self.__speed = 10
+        super().__init__(surface, sprite, xPos, yPos, 10)
 
     def Movement(self):
-        self.__yPos -= self.__speed
+        self._yPos -= self._speed
 
-    def getXPos(self):
-        return self.__xPos
-
-    def getYPos(self):
-        return self.__yPos
-
-    def getPos(self):
-        return (self.__xPos, self.__yPos)
-
-    def drawSprite(self):
-        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
-
-class Enemy():
+class Enemy(GameObject):
     def __init__(self, surface, sprite, xPos, yPos):
-        self.__surface = surface
-        self.__sprite = sprite
-        self.__xPos = xPos
-        self.__yPos = yPos
-        self.__speed = 3
+        super().__init__(surface, sprite, xPos, yPos, 3)
 
     def Movement(self):
-        self.__yPos += self.__speed
+        self._yPos += self._speed
 
-    def getXPos(self):
-        return self.__xPos
-
-    def getYPos(self):
-        return self.__yPos
-
-    def getPos(self):
-        return (self.__xPos, self.__yPos)
-    
-    def drawSprite(self):
-        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
-
-class EnemyBullet():
+class EnemyBullet(GameObject):
     def __init__(self, surface, sprite, xPos, yPos):
-        self.__surface = surface
-        self.__sprite = sprite
-        self.__xPos = xPos
-        self.__yPos = yPos
-        self.__speed = 7
+        super().__init__(surface, sprite, xPos, yPos, 7)
 
     def Movement(self):
-        self.__yPos += self.__speed
+        self._yPos += self._speed
 
-    def getXPos(self):
-        return self.__xPos
-
-    def getYPos(self):
-        return self.__yPos
-
-    def drawSprite(self):
-        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
-
-class PlayerMissile():
+class PlayerMissile(GameObject):
     def __init__(self, surface, sprite, xPos, yPos):
-        self.__surface = surface
-        self.__sprite = sprite
-        self.__xPos = xPos
-        self.__yPos = yPos
-        self.__speed = 14
+        super().__init__(surface, sprite, xPos, yPos, 14)
 
     def Movement(self):
-        self.__yPos -= self.__speed
-
-    def getXPos(self):
-        return self.__xPos
-
-    def getYPos(self):
-        return self.__yPos
-
-    def drawSprite(self):
-        self.__surface.blit(self.__sprite, (self.__xPos, self.__yPos))
+        self._yPos -= self._speed
 
 # Initialisation 
 
@@ -164,8 +109,7 @@ enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pyga
 enemyBulletSprite.fill((40, 255, 255))
 
 # Create player object, starting at the bottom center of the screen
-player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite,
-                screenWidth // 2, screenHeight - playerMovingForwardSprite.get_height())
+player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, screenWidth // 2, screenHeight - playerMovingForwardSprite.get_height())
 
 # Lists to hold bullets, missiles, enemies, and enemy bullets
 bullets = []
@@ -175,12 +119,12 @@ enemyBullets = []
 
 # Timers for shooting and spawning
 shoot_timer = 0
-shoot_delay = 8               # How many frames between player shots
+shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 30            # Cooldown for missile (frames)
+missile_delay = 60
 enemy_spawn_timer = 0
-enemy_spawn_delay = 40        # How often to spawn an enemy (frames)
-enemy_shoot_delay = 50        # How often enemies shoot (random chance)
+enemy_spawn_delay = 40
+enemy_shoot_delay = 50
 
 def Draw():
     # Draw the background, then all sprites in this order: player bullets, missiles, enemies, enemy bullets, player
@@ -206,7 +150,7 @@ while running:
     keys = pygame.key.get_pressed()
     player.Movement(keys)
 
-    # Player Shooting (automatic) 
+    # Player Shooting
     shoot_timer += 1
     if shoot_timer >= shoot_delay:
         bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2
@@ -214,7 +158,7 @@ while running:
         bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y))
         shoot_timer = 0
 
-    # Player Missile Shooting (space bar) 
+    # Player Missile Shooting 
     if missile_cooldown > 0:
         missile_cooldown -= 1
     if keys[pygame.K_SPACE] and missile_cooldown == 0:
@@ -223,44 +167,17 @@ while running:
         missiles.append(PlayerMissile(surface, playerMissileSprite, missile_x, missile_y))
         missile_cooldown = missile_delay
 
-    # Enemy Spawning
-    enemy_spawn_timer += 1
-    if enemy_spawn_timer >= enemy_spawn_delay:
-        # Spawn an enemy at random X position at the top
-        enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
-        enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
-        enemy_spawn_timer = 0
-
     # Move Player Bullets
     for bullet in bullets[:]:
         bullet.Movement()
         if bullet.getYPos() < -bullet_height:
-            bullets.remove(bullet) # Remove bullet if it goes off screen
+            bullets.remove(bullet)  # Remove bullet if it goes off screen
 
-    # Missiles 
+    # Missiles
     for missile in missiles[:]:
         missile.Movement()
         if missile.getYPos() < -missile_height:
-            missiles.remove(missile) # Remove missile if it goes off screen
-
-    # Enemies and Enemy Shooting 
-    for enemy in enemies[:]:
-        enemy.Movement()
-        # Randomly allow enemy to shoot
-        if random.randint(0, enemy_shoot_delay-1) == 0:
-            ebullet_x = enemy.getXPos() + enemySprite.get_width() // 2 - enemyBullet_width // 2
-            ebullet_y = enemy.getYPos() + enemySprite.get_height()
-            enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y))
-        # Remove enemy if it moves off the bottom of the screen
-        if enemy.getYPos() > screenHeight:
-            enemies.remove(enemy)
-
-    # Enemy Bullets 
-    for ebullet in enemyBullets[:]:
-        ebullet.Movement()
-        if ebullet.getYPos() > screenHeight:
-            enemyBullets.remove(ebullet) # Remove enemy bullet if it goes off screen
-
+            missiles.remove(missile)  # Remove missile if it goes off screen
 
     Draw()
     pygame.display.update()
