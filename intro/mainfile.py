@@ -1,7 +1,6 @@
 import pygame
 import random
 
-# Base class for all game objects
 class GameObject:
     def __init__(self, surface, sprite, xPos, yPos, speed):
         self._surface = surface
@@ -21,6 +20,9 @@ class GameObject:
 
     def drawSprite(self):
         self._surface.blit(self._sprite, (self._xPos, self._yPos))
+
+    def get_rect(self):
+        return pygame.Rect(self._xPos, self._yPos, self._sprite.get_width(), self._sprite.get_height())
 
 class Player(GameObject):
     def __init__(self, surface, moving_forward_sprite, moving_left_sprite, moving_right_sprite, xPos, yPos):
@@ -89,7 +91,7 @@ screenWidth = 320
 screenHeight = 480
 surface = pygame.display.set_mode((screenWidth, screenHeight))
 
-BGcolor = (14, 0, 84)
+BGcolor = (14, 0, 200)
 
 clock = pygame.time.Clock()
 cSpeed = 60
@@ -110,10 +112,10 @@ playerMissileSprite.fill((255, 80, 0))
 enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
 enemyBullet_width, enemyBullet_height = 2, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
-enemyBulletSprite.fill((143, 110, 60))
+enemyBulletSprite.fill((243, 110, 60))
 
 # Create player object, starting at the bottom center of the screen
-player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, screenWidth // 2, screenHeight - playerMovingForwardSprite.get_height())
+player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
 
 # Lists to hold bullets, missiles, enemies, and enemy bullets
 bullets = []
@@ -125,7 +127,7 @@ enemyBullets = []
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 60
+missile_delay = 450
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 50
@@ -145,6 +147,7 @@ def Draw():
 
 # Main loop
 running = True
+player_health = 3
 
 while running:
     for event in pygame.event.get():
@@ -206,6 +209,38 @@ while running:
         ebullet.Movement()
         if ebullet.getYPos() > screenHeight:
             enemyBullets.remove(ebullet) # Remove enemy bullet if it goes off screen
+    for bullet in bullets[:]:
+        bullet_rect = bullet.get_rect()
+        for enemy in enemies[:]:
+            enemy_rect = enemy.get_rect()
+            if bullet_rect.colliderect(enemy_rect):
+                # Remove both bullet and enemy on collision
+                if bullet in bullets:
+                    bullets.remove(bullet)
+                if enemy in enemies:
+                    enemies.remove(enemy)
+                break # break to avoid modifying the list while iterating
+
+    for ebullet in enemyBullets[:]:
+        # Check if enemy bullet collides with player
+        if ebullet.get_rect().colliderect(player.get_rect()):
+            player_health -= 1
+            enemyBullets.remove(ebullet)
+            if player_health <= 0:
+                running = False 
+            running = False 
+    
+    for missile in missiles[:]:
+        missile_rect = missile.get_rect()
+        for enemy in enemies[:]:
+            if missile_rect.colliderect(enemy.get_rect()):
+                if missile in missiles:
+                    missiles.remove(missile)
+                if enemy in enemies:
+                    enemies.remove(enemy)
+                break
+
+
 
     Draw()
     pygame.display.update()
