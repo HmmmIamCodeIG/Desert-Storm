@@ -132,6 +132,12 @@ enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 50
 
+# Player health and lives
+player_health = 3
+player_max_health = 3
+player_lives = 3
+font = pygame.font.SysFont(None, 28)
+
 def Draw():
     # Draw the background, then all sprites in this order: player bullets, missiles, enemies, enemy bullets, player
     surface.fill(BGcolor)
@@ -144,10 +150,15 @@ def Draw():
     for ebullet in enemyBullets:
         ebullet.drawSprite()
     player.drawSprite()
+    # Draw lives at the bottom
+    lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
+    surface.blit(lives_text, (10, screenHeight - 30))
+    # Draw health (optional)
+    health_text = font.render(f"Health: {player_health}", True, (255, 255, 255))
+    surface.blit(health_text, (screenWidth - 120, screenHeight - 30))
 
 # Main loop
 running = True
-player_health = 3
 
 while running:
     for event in pygame.event.get():
@@ -196,11 +207,11 @@ while running:
 
     # Enemies and Enemy Shooting
     for enemy in enemies[:]:
-        enemy.Movement() # Randomly allow enemy to shoot
+        enemy.Movement()
         if random.randint(0, enemy_shoot_delay-1) == 0:
             ebullet_x = enemy.getXPos() + enemySprite.get_width() // 2 - enemyBullet_width // 2
             ebullet_y = enemy.getYPos() + enemySprite.get_height()
-            enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y)) # Remove enemy if it moves off the bottom of the screen
+            enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y))
         if enemy.getYPos() > screenHeight:
             enemies.remove(enemy)
 
@@ -208,28 +219,21 @@ while running:
     for ebullet in enemyBullets[:]:
         ebullet.Movement()
         if ebullet.getYPos() > screenHeight:
-            enemyBullets.remove(ebullet) # Remove enemy bullet if it goes off screen
+            enemyBullets.remove(ebullet)
+
+    # Bullet-enemy collisions
     for bullet in bullets[:]:
         bullet_rect = bullet.get_rect()
         for enemy in enemies[:]:
             enemy_rect = enemy.get_rect()
             if bullet_rect.colliderect(enemy_rect):
-                # Remove both bullet and enemy on collision
                 if bullet in bullets:
                     bullets.remove(bullet)
                 if enemy in enemies:
                     enemies.remove(enemy)
-                break # break to avoid modifying the list while iterating
+                break
 
-    for ebullet in enemyBullets[:]:
-        # Check if enemy bullet collides with player
-        if ebullet.get_rect().colliderect(player.get_rect()):
-            player_health -= 1
-            enemyBullets.remove(ebullet)
-            if player_health <= 0:
-                running = False 
-            running = False 
-    
+    # Missile-enemy collisions
     for missile in missiles[:]:
         missile_rect = missile.get_rect()
         for enemy in enemies[:]:
@@ -240,7 +244,21 @@ while running:
                     enemies.remove(enemy)
                 break
 
-
+    # Enemy bullet-player collisions (lives & health system)
+    for ebullet in enemyBullets[:]:
+        if ebullet.get_rect().colliderect(player.get_rect()):
+            player_health -= 1
+            enemyBullets.remove(ebullet)
+            if player_health <= 0:
+                player_lives -= 1
+                if player_lives <= 0:
+                    running = False
+                else:
+                    # Reset health and reposition player
+                    player_health = player_max_health
+                    player._xPos = (screenWidth - playerMovingForwardSprite.get_width()) // 2
+                    player._yPos = screenHeight - playerMovingForwardSprite.get_height()
+            break  # Only process one hit at a time
 
     Draw()
     pygame.display.update()
