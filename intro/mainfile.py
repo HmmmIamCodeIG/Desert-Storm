@@ -45,7 +45,6 @@ class Player(GameObject):
             self._xPos -= self._speed
             moved_left = True
 
-        # make sure the player doesn't go off the screen
         self._xPos = max(0, min(self._xPos, self._surface.get_width() - self._sprite.get_width()))
         self._yPos = max(0, min(self._yPos, self._surface.get_height() - self._sprite.get_height()))
 
@@ -115,6 +114,7 @@ enemyBullet_width, enemyBullet_height = 2, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
 enemyBulletSprite.fill((243, 110, 60))
 explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha()
+explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
 
 # Create player object, starting at the bottom center of the screen
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
@@ -126,9 +126,7 @@ enemies = []
 enemyBullets = []
 explosions = []  
 
-
 # Timers for shooting and spawning
-explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
 EXPLOSION_TIME = 30 
 shoot_timer = 0
 shoot_delay = 8
@@ -145,7 +143,6 @@ player_lives = 3
 font = pygame.font.SysFont(None, 28)
 
 def Draw():
-    # Draw the background, then all sprites in this order: player bullets, missiles, enemies, enemy bullets, player
     surface.fill(BGcolor)
     for bullet in bullets:
         bullet.drawSprite()
@@ -155,8 +152,11 @@ def Draw():
         enemy.drawSprite()
     for ebullet in enemyBullets:
         ebullet.drawSprite()
+    # Draw explosions
+    for exp in explosions:
+        surface.blit(explosionSprite, (exp[0], exp[1]))
     player.drawSprite()
-    # Draw lives at the bottom
+    # Draw lives at the top left
     lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
     surface.blit(lives_text, (10, 10))
     # Draw health below lives
@@ -186,29 +186,28 @@ while running:
     if missile_cooldown > 0:
         missile_cooldown -= 1
     if keys[pygame.K_SPACE] and missile_cooldown == 0: 
-        missile_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - missile_width // 2 # Center missile under player
-        missile_y = player.getYPos() # Position missile at player's position
+        missile_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - missile_width // 2
+        missile_y = player.getYPos()
         missiles.append(PlayerMissile(surface, playerMissileSprite, missile_x, missile_y))
         missile_cooldown = missile_delay
 
     # Move Player Bullets
     for bullet in bullets[:]:
         bullet.Movement() 
-        if bullet.getYPos() < -bullet_height: # check if bullet goes off screen
-            bullets.remove(bullet)  # Remove bullet if it goes off screen
+        if bullet.getYPos() < -bullet_height:
+            bullets.remove(bullet)
 
     # Missiles
     for missile in missiles[:]:
         missile.Movement()
         if missile.getYPos() < -missile_height:
-            missiles.remove(missile)  # Remove missile if it goes off screen
+            missiles.remove(missile)
 
     # Enemy Spawning
     enemy_spawn_timer += 0.8
     if enemy_spawn_timer >= enemy_spawn_delay:
-        # Spawn an enemy at random X position at the top
-        enemy_x = random.randint(0, screenWidth - enemySprite.get_width()) # Ensure enemy spawns within screen width
-        enemies.append(Enemy(surface, enemySprite, enemy_x, 0)) # Position enemy at the top
+        enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
+        enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
         enemy_spawn_timer = 0
 
     # Enemies and Enemy Shooting
@@ -220,6 +219,7 @@ while running:
             enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y))
         if enemy.getYPos() > screenHeight:
             enemies.remove(enemy)
+
     # Enemy Bullets
     for ebullet in enemyBullets[:]:
         ebullet.Movement()
