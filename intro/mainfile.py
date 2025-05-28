@@ -55,6 +55,7 @@ class Player(GameObject):
             self._sprite = self._moving_right_sprite
         else:
             self._sprite = self._default_sprite
+
 class PlayerBullet(GameObject):
     def __init__(self, surface, sprite, xPos, yPos):
         super().__init__(surface, sprite, xPos, yPos, 10)
@@ -108,11 +109,12 @@ playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALP
 playerBulletSprite.fill((255, 255, 255))
 missile_width, missile_height = 3, 8
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
-playerMissileSprite.fill((255, 80, 0))
+playerMissileSprite.fill((255, 0, 0))
 enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
 enemyBullet_width, enemyBullet_height = 2, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
 enemyBulletSprite.fill((243, 110, 60))
+explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha()
 
 # Create player object, starting at the bottom center of the screen
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
@@ -122,12 +124,16 @@ bullets = []
 missiles = []
 enemies = []
 enemyBullets = []
+explosions = []  
+
 
 # Timers for shooting and spawning
+explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
+EXPLOSION_TIME = 30 
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 450
+missile_delay = 90
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 50
@@ -152,10 +158,10 @@ def Draw():
     player.drawSprite()
     # Draw lives at the bottom
     lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
-    surface.blit(lives_text, (10, screenHeight - 30))
-    # Draw health (optional)
+    surface.blit(lives_text, (10, 10))
+    # Draw health below lives
     health_text = font.render(f"Health: {player_health}", True, (255, 255, 255))
-    surface.blit(health_text, (screenWidth - 120, screenHeight - 30))
+    surface.blit(health_text, (10, 10 + lives_text.get_height() + 5))
 
 # Main loop
 running = True
@@ -179,16 +185,16 @@ while running:
     # Player Missile Shooting 
     if missile_cooldown > 0:
         missile_cooldown -= 1
-    if keys[pygame.K_SPACE] and missile_cooldown == 0:
-        missile_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - missile_width // 2
-        missile_y = player.getYPos()
+    if keys[pygame.K_SPACE] and missile_cooldown == 0: 
+        missile_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - missile_width // 2 # Center missile under player
+        missile_y = player.getYPos() # Position missile at player's position
         missiles.append(PlayerMissile(surface, playerMissileSprite, missile_x, missile_y))
         missile_cooldown = missile_delay
 
     # Move Player Bullets
     for bullet in bullets[:]:
-        bullet.Movement()
-        if bullet.getYPos() < -bullet_height:
+        bullet.Movement() 
+        if bullet.getYPos() < -bullet_height: # check if bullet goes off screen
             bullets.remove(bullet)  # Remove bullet if it goes off screen
 
     # Missiles
@@ -201,8 +207,8 @@ while running:
     enemy_spawn_timer += 0.8
     if enemy_spawn_timer >= enemy_spawn_delay:
         # Spawn an enemy at random X position at the top
-        enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
-        enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
+        enemy_x = random.randint(0, screenWidth - enemySprite.get_width()) # Ensure enemy spawns within screen width
+        enemies.append(Enemy(surface, enemySprite, enemy_x, 0)) # Position enemy at the top
         enemy_spawn_timer = 0
 
     # Enemies and Enemy Shooting
@@ -214,7 +220,6 @@ while running:
             enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y))
         if enemy.getYPos() > screenHeight:
             enemies.remove(enemy)
-
     # Enemy Bullets
     for ebullet in enemyBullets[:]:
         ebullet.Movement()
@@ -230,6 +235,9 @@ while running:
                 if bullet in bullets:
                     bullets.remove(bullet)
                 if enemy in enemies:
+                    explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
+                    explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
+                    explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
                     enemies.remove(enemy)
                 break
 
@@ -241,6 +249,9 @@ while running:
                 if missile in missiles:
                     missiles.remove(missile)
                 if enemy in enemies:
+                    explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
+                    explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
+                    explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
                     enemies.remove(enemy)
                 break
 
@@ -251,14 +262,26 @@ while running:
             enemyBullets.remove(ebullet)
             if player_health <= 0:
                 player_lives -= 1
+                explosion_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - explosionSprite.get_width() // 2
+                explosion_y = player.getYPos() + playerMovingForwardSprite.get_height() // 2 - explosionSprite.get_height() // 2
+                explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
+                pygame.display.update()
                 if player_lives <= 0:
+                    Draw()
+                    pygame.display.update()
+                    pygame.time.delay(500)
                     running = False
                 else:
-                    # Reset health and reposition player
                     player_health = player_max_health
                     player._xPos = (screenWidth - playerMovingForwardSprite.get_width()) // 2
                     player._yPos = screenHeight - playerMovingForwardSprite.get_height()
-            break  # Only process one hit at a time
+                break
+
+    # Update and remove finished explosions
+    for exp in explosions[:]:
+        exp[2] -= 1
+        if exp[2] <= 0:
+            explosions.remove(exp)
 
     Draw()
     pygame.display.update()
