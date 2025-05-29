@@ -128,10 +128,11 @@ enemyBullets = []
 explosions = []  
 
 # Timers for shooting and spawning
-EXPLOSION_TIME = 30 
+score = 0
+explosion_time = 30 
 missile_homing_speed = 10
 shoot_timer = 0
-shoot_delay = 8
+shoot_delay = 5
 missile_cooldown = 0
 missile_delay = 150
 enemy_spawn_timer = 0
@@ -158,12 +159,15 @@ def Draw():
     for exp in explosions:
         surface.blit(explosionSprite, (exp[0], exp[1]))
     player.drawSprite()
-    # Draw lives at the top left
+    # Draw lives 
     lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
-    surface.blit(lives_text, (10, 10))
-    # Draw health below lives
+    surface.blit(lives_text, (5, 5))
+    # Draw health 
     health_text = font.render(f"Health: {player_health}", True, (255, 255, 255))
-    surface.blit(health_text, (10, 10 + lives_text.get_height() + 5))
+    surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
+    # Draw score 
+    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+    surface.blit(score_text, (5, 5 + score_text.get_width() + 10))
 
 # Main loop
 running = True
@@ -252,9 +256,9 @@ while running:
                 if enemy in enemies:
                     explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
                     explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
-                    explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
+                    explosions.append([explosion_x, explosion_y, explosion_time])
                     enemies.remove(enemy)
-                break
+                    score += 1
 
     # Missile-enemy collisions
     for missile in missiles[:]:
@@ -266,20 +270,21 @@ while running:
                 if enemy in enemies:
                     explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
                     explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
-                    explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
+                    explosions.append([explosion_x, explosion_y, explosion_time])
                     enemies.remove(enemy)
+                    score += 1
                 break
 
     # Enemy bullet-player collisions (lives & health system)
     for ebullet in enemyBullets[:]:
         if ebullet.get_rect().colliderect(player.get_rect()):
-            player_health -= 1
+            player_health -= 3
             enemyBullets.remove(ebullet)
             if player_health <= 0:
                 player_lives -= 1
                 explosion_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - explosionSprite.get_width() // 2
                 explosion_y = player.getYPos() + playerMovingForwardSprite.get_height() // 2 - explosionSprite.get_height() // 2
-                explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
+                explosions.append([explosion_x, explosion_y, explosion_time])
                 pygame.display.update()
                 if player_lives <= 0:
                     Draw()
@@ -292,14 +297,14 @@ while running:
                     player._yPos = screenHeight - playerMovingForwardSprite.get_height()
                 break
         
-        # enemy plane-player collisions
+    # Enemy plane-player collisions
     for enemy in enemies[:]:
         if enemy.get_rect().colliderect(player.get_rect()):
             player_health -= 3
             enemies.remove(enemy)
             explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
             explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
-            explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
+            explosions.append([explosion_x, explosion_y, explosion_time])
             if player_health <= 0:
                 player_lives -= 1
                 if player_lives <= 0:
