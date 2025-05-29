@@ -129,7 +129,7 @@ explosions = []
 
 # Timers for shooting and spawning
 EXPLOSION_TIME = 30 
-missile_homing_speed = 20
+missile_homing_speed = 10
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
