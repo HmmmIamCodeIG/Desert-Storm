@@ -1,5 +1,6 @@
 import pygame
 import random
+import math
 
 class GameObject:
     def __init__(self, surface, sprite, xPos, yPos, speed):
@@ -128,10 +129,11 @@ explosions = []
 
 # Timers for shooting and spawning
 EXPLOSION_TIME = 30 
+missile_homing_speed = 20
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 90
+missile_delay = 150
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 50
@@ -142,6 +144,7 @@ player_max_health = 3
 player_lives = 3
 font = pygame.font.SysFont(None, 28)
 
+# Draw function to render the game state
 def Draw():
     surface.fill(BGcolor)
     for bullet in bullets:
@@ -178,7 +181,7 @@ while running:
     if shoot_timer >= shoot_delay: 
         bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2
         bullet_y = player.getYPos()
-        bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y)) 
+        bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y))
         shoot_timer = 0
 
     # Player Missile Shooting 
@@ -201,6 +204,19 @@ while running:
         missile.Movement()
         if missile.getYPos() < -missile_height:
             missiles.remove(missile)
+            continue 
+        if enemies:
+            closest_enemy = min(enemies, key=lambda e: math.hypot(
+                e.getXPos() + enemySprite.get_width() // 2 - (missile.getXPos() + missile_width // 2),
+                e.getYPos() + enemySprite.get_height() // 2 - (missile.getYPos() + missile_height // 2)
+            ))
+            missile_center_x = missile.getXPos() + missile_width // 2
+            enemy_center_x = closest_enemy.getXPos() + enemySprite.get_width() // 2
+            dx = enemy_center_x - missile_center_x
+            if closest_enemy.getYPos() < missile.getYPos():
+                if abs(dx) > missile_homing_speed:
+                    dx = missile_homing_speed if dx > 0 else -missile_homing_speed
+                missile._xPos += dx
 
     # Enemy Spawning
     enemy_spawn_timer += 0.8
@@ -244,7 +260,7 @@ while running:
     for missile in missiles[:]:
         missile_rect = missile.get_rect()
         for enemy in enemies[:]:
-            if missile_rect.colliderect(enemy.get_rect()):
+            if missile_rect.colliderect(enemy.get_rect()): 
                 if missile in missiles:
                     missiles.remove(missile)
                 if enemy in enemies:
