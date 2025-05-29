@@ -152,7 +152,6 @@ def Draw():
         enemy.drawSprite()
     for ebullet in enemyBullets:
         ebullet.drawSprite()
-    # Draw explosions
     for exp in explosions:
         surface.blit(explosionSprite, (exp[0], exp[1]))
     player.drawSprite()
@@ -176,10 +175,10 @@ while running:
 
     # Player Shooting
     shoot_timer += 1
-    if shoot_timer >= shoot_delay:
+    if shoot_timer >= shoot_delay: 
         bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2
         bullet_y = player.getYPos()
-        bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y))
+        bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y)) 
         shoot_timer = 0
 
     # Player Missile Shooting 
@@ -276,6 +275,24 @@ while running:
                     player._xPos = (screenWidth - playerMovingForwardSprite.get_width()) // 2
                     player._yPos = screenHeight - playerMovingForwardSprite.get_height()
                 break
+        
+        # enemy plane-player collisions
+    for enemy in enemies[:]:
+        if enemy.get_rect().colliderect(player.get_rect()):
+            player_health -= 3
+            enemies.remove(enemy)
+            explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
+            explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
+            explosions.append([explosion_x, explosion_y, EXPLOSION_TIME])
+            if player_health <= 0:
+                player_lives -= 1
+                if player_lives <= 0:
+                    running = False
+                else:
+                    player_health = player_max_health
+                    player._xPos = (screenWidth - playerMovingForwardSprite.get_width()) // 2
+                    player._yPos = screenHeight - playerMovingForwardSprite.get_height()
+            break
 
     # Update and remove finished explosions
     for exp in explosions[:]:
