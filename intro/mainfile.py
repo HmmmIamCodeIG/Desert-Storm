@@ -92,7 +92,8 @@ screenWidth = 320
 screenHeight = 480
 surface = pygame.display.set_mode((screenWidth, screenHeight))
 
-BGcolor = (14, 0, 200)
+BG = pygame.image.load("Intro/libraryofimages/water.jpg").convert() 
+BG = pygame.transform.scale(BG, (screenWidth, screenHeight))  
 
 clock = pygame.time.Clock()
 cSpeed = 60
@@ -107,13 +108,13 @@ playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingri
 bullet_width, bullet_height = 2, 6
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
 playerBulletSprite.fill((255, 255, 255))
-missile_width, missile_height = 3, 8
+missile_width, missile_height = 3, 12
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
 playerMissileSprite.fill((255, 0, 0))
 enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
 enemyBullet_width, enemyBullet_height = 2, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
-enemyBulletSprite.fill((243, 110, 60))
+enemyBulletSprite.fill((0, 255, 60))
 explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha()
 explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
 
@@ -132,12 +133,12 @@ score = 0
 explosion_time = 30 
 missile_homing_speed = 10
 shoot_timer = 0
-shoot_delay = 5
+shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 150
+missile_delay = 200
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
-enemy_shoot_delay = 50
+enemy_shoot_delay = 30
 
 # Player health and lives
 player_health = 3
@@ -147,7 +148,7 @@ font = pygame.font.SysFont(None, 28)
 
 # Draw function to render the game state
 def Draw():
-    surface.fill(BGcolor)
+    surface.blit(BG, (0, 0))  
     for bullet in bullets:
         bullet.drawSprite()
     for missile in missiles:
@@ -167,7 +168,7 @@ def Draw():
     surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
     # Draw score 
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    surface.blit(score_text, (5, 5 + score_text.get_width() + 10))
+    surface.blit(score_text, (5, 5 + score_text.get_width() + lives_text.get_height() + 6))
 
 # Main loop
 running = True
@@ -278,7 +279,7 @@ while running:
     # Enemy bullet-player collisions (lives & health system)
     for ebullet in enemyBullets[:]:
         if ebullet.get_rect().colliderect(player.get_rect()):
-            player_health -= 3
+            player_health -= 1
             enemyBullets.remove(ebullet)
             if player_health <= 0:
                 player_lives -= 1
