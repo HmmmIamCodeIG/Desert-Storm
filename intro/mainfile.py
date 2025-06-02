@@ -2,6 +2,19 @@ import pygame
 import random
 import math
 
+class VisualDebugger:
+    def __init__(self, surface):
+        self._surface = surface
+        self._debug_lines = []
+
+    def add_line(self, start_pos, end_pos, color=(255, 0, 0)):
+        self._debug_lines.append((start_pos, end_pos, color))
+
+    def draw(self):
+        for start_pos, end_pos, color in self._debug_lines:
+            pygame.draw.line(self._surface, color, start_pos, end_pos)
+        self._debug_lines.clear()
+
 class GameObject:
     def __init__(self, surface, sprite, xPos, yPos, speed):
         self._surface = surface
@@ -105,18 +118,19 @@ pygame.display.set_caption(title)
 playerMovingForwardSprite = pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha()
 playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha()
 playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
-bullet_width, bullet_height = 2, 6
+bullet_width, bullet_height = 4, 6
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
-playerBulletSprite.fill((255, 255, 255))
-missile_width, missile_height = 3, 12
+playerBulletSprite.fill((255, 255, 0))
+missile_width, missile_height = 6, 12
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
 playerMissileSprite.fill((255, 0, 0))
 enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
-enemyBullet_width, enemyBullet_height = 2, 6
+enemyBullet_width, enemyBullet_height = 4, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
-enemyBulletSprite.fill((0, 255, 60))
+enemyBulletSprite.fill((0, 255, 255))
 explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha()
 explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
+explosionSound = pygame.mixer.Sound("Intro/dry-explosion-fx.wav")
 
 # Create player object, starting at the bottom center of the screen
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
@@ -139,16 +153,21 @@ missile_delay = 200
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 30
-
-# Player health and lives
+explosionSound.set_volume(0.5)  
 player_health = 3
 player_max_health = 3
 player_lives = 3
 font = pygame.font.SysFont(None, 28)
+bg_offset = 0
 
 # Draw function to render the game state
 def Draw():
-    surface.blit(BG, (0, 0))  
+    global bg_offset  
+    bg_offset_int = int(bg_offset)
+    BG_height = BG.get_height()
+    surface.blit(BG, (0, bg_offset_int - BG_height))
+    surface.blit(BG, (0, bg_offset_int))
+
     for bullet in bullets:
         bullet.drawSprite()
     for missile in missiles:
@@ -180,6 +199,24 @@ while running:
 
     keys = pygame.key.get_pressed()
     player.Movement(keys)
+
+    # Visual Debugger
+    debugger = VisualDebugger(surface)
+    debugger.add_line(player.getPos(), (player.getXPos() + playerMovingForwardSprite.get_width() // 2, player.getYPos() + playerMovingForwardSprite.get_height()), (0, 255, 0))  # Player position line
+    for bullet in bullets:
+        debugger.add_line(bullet.getPos(), (bullet.getXPos() + bullet_width // 2, bullet.getYPos() + bullet_height), (255, 255, 0))
+    for missile in missiles:
+        debugger.add_line(missile.getPos(), (missile.getXPos() + missile_width // 2, missile.getYPos() + missile_height), (255, 0, 0))
+    for enemy in enemies:
+        debugger.add_line(enemy.getPos(), (enemy.getXPos() + enemySprite.get_width() // 2, enemy.getYPos() + enemySprite.get_height()), (255, 0, 255))
+    for ebullet in enemyBullets:
+        debugger.add_line(ebullet.getPos(), (ebullet.getXPos() + enemyBullet_width // 2, ebullet.getYPos() + enemyBullet_height), (0, 0, 255))
+    debugger.draw()
+
+    # Scrolling Background
+    bg_offset += 1
+    if bg_offset >= BG.get_height():
+        bg_offset = 0
 
     # Player Shooting
     shoot_timer += 1
@@ -258,6 +295,7 @@ while running:
                     explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
                     explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
                     explosions.append([explosion_x, explosion_y, explosion_time])
+                    explosionSound.play()
                     enemies.remove(enemy)
                     score += 1
 
@@ -272,6 +310,7 @@ while running:
                     explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
                     explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
                     explosions.append([explosion_x, explosion_y, explosion_time])
+                    explosionSound.play()
                     enemies.remove(enemy)
                     score += 1
                 break
@@ -286,6 +325,7 @@ while running:
                 explosion_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - explosionSprite.get_width() // 2
                 explosion_y = player.getYPos() + playerMovingForwardSprite.get_height() // 2 - explosionSprite.get_height() // 2
                 explosions.append([explosion_x, explosion_y, explosion_time])
+                explosionSound.play()
                 pygame.display.update()
                 if player_lives <= 0:
                     Draw()
@@ -306,6 +346,8 @@ while running:
             explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
             explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
             explosions.append([explosion_x, explosion_y, explosion_time])
+            explosionSound.play()
+            pygame.display.update()
             if player_health <= 0:
                 player_lives -= 1
                 if player_lives <= 0:
