@@ -134,13 +134,6 @@ explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png"
 explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
 explosionSound = pygame.mixer.Sound("Intro/fx/dry-explosion-fx.wav")
 
-# Soundtrack
-soundtrack1 = pygame.mixer.Sound("Intro/fx/soundtrack1.mp3")
-soundtrack2 = pygame.mixer.Sound("Intro/fx/soundtrack2.mp3")
-soundtrack3 = pygame.mixer.Sound("Intro/fx/soundtrack3.mp3")
-soundtrack4 = pygame.mixer.Sound("Intro/fx/soundtrack4.mp3")
-soundtrack5 = pygame.mixer.Sound("Intro/fx/soundtrack5.mp3")
-
 # Create player object, starting at the bottom center of the screen
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
 
@@ -151,12 +144,20 @@ enemies = []
 enemyBullets = []
 explosions = []  
 audiopath = {
-    1: soundtrack1, 
-    2: soundtrack2,
-    3: soundtrack3,
-    4: soundtrack4,
-    5: soundtrack5,
+    1: pygame.mixer.Sound("Intro/soundtrack/soundtrack1.mp3"),
+    2: pygame.mixer.Sound("Intro/soundtrack/soundtrack2.mp3"),
+    3: pygame.mixer.Sound("Intro/soundtrack/soundtrack3.mp3"),
+    4: pygame.mixer.Sound("Intro/soundtrack/soundtrack4.mp3"),
+    5: pygame.mixer.Sound("Intro/soundtrack/soundtrack5.mp3")
 }
+
+for i in range(1, 6):
+    audiopath[i].set_volume(0.50)
+
+# Fx volume
+explosionSound.set_volume(0.3) 
+gunshotSound.set_volume(0.1) 
+missileSound.set_volume(0.5)
 
 # Timers for shooting and spawning
 score = 0
@@ -169,15 +170,11 @@ missile_delay = 200
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 30
-explosionSound.set_volume(0.3) 
-gunshotSound.set_volume(0.1) 
-missileSound.set_volume(0.5)
 player_health = 3
 player_max_health = 3
 player_lives = 3
 font = pygame.font.SysFont(None, 28)
 bg_offset = 0
-soundtrack1, soundtrack2, soundtrack3, soundtrack4, soundtrack5 = 0.5, 0.5, 0.5, 0.5, 0.5
 
 # Draw function to render the game state
 def Draw():
@@ -206,7 +203,11 @@ def Draw():
     surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
     # Draw score 
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    surface.blit(score_text, (5, 5 + score_text.get_width() + lives_text.get_height() + 6))
+    surface.blit(score_text, (5, 5 + lives_text.get_height() + health_text.get_height() + 10))
+
+soundtrack_choice = random.randint(1, 5)
+current_soundtrack = audiopath[soundtrack_choice]
+current_soundtrack.play(-1)
 
 # Main loop
 running = True
@@ -231,11 +232,6 @@ while running:
     for ebullet in enemyBullets:
         debugger.add_line(ebullet.getPos(), (ebullet.getXPos() + enemyBullet_width // 2, ebullet.getYPos() + enemyBullet_height), (0, 0, 255))
     debugger.draw()
-
-    # soundtrack
-    random.randint(1, 5)
-
-
 
     # Scrolling Background
     bg_offset += 1
@@ -287,7 +283,7 @@ while running:
                 missile._xPos += dx
 
     # Enemy Spawning
-    enemy_spawn_timer += 0.8
+    enemy_spawn_timer += 1.3
     if enemy_spawn_timer >= enemy_spawn_delay:
         enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
         enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
