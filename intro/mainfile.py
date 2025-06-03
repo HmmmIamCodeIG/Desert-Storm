@@ -114,23 +114,32 @@ cSpeed = 60
 title = "gametest"
 pygame.display.set_caption(title)
 
-# Load sprites for player, bullets, missiles, enemies, and enemy bullets
+# Load sprites and sounds for player, bullets, missiles, enemies, and enemy bullets
 playerMovingForwardSprite = pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha()
 playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha()
 playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
 bullet_width, bullet_height = 4, 6
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
 playerBulletSprite.fill((255, 255, 0))
+gunshotSound = pygame.mixer.Sound("Intro/fx/gunshot-fx-zap.wav")
 missile_width, missile_height = 6, 12
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
 playerMissileSprite.fill((255, 0, 0))
+missileSound = pygame.mixer.Sound("Intro/fx/launching-missile-313226.mp3")
 enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
 enemyBullet_width, enemyBullet_height = 4, 6
 enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
 enemyBulletSprite.fill((0, 255, 255))
 explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha()
 explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
-explosionSound = pygame.mixer.Sound("Intro/dry-explosion-fx.wav")
+explosionSound = pygame.mixer.Sound("Intro/fx/dry-explosion-fx.wav")
+
+# Soundtrack
+soundtrack1 = pygame.mixer.Sound("Intro/fx/soundtrack1.mp3")
+soundtrack2 = pygame.mixer.Sound("Intro/fx/soundtrack2.mp3")
+soundtrack3 = pygame.mixer.Sound("Intro/fx/soundtrack3.mp3")
+soundtrack4 = pygame.mixer.Sound("Intro/fx/soundtrack4.mp3")
+soundtrack5 = pygame.mixer.Sound("Intro/fx/soundtrack5.mp3")
 
 # Create player object, starting at the bottom center of the screen
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
@@ -141,11 +150,18 @@ missiles = []
 enemies = []
 enemyBullets = []
 explosions = []  
+audiopath = {
+    1: soundtrack1, 
+    2: soundtrack2,
+    3: soundtrack3,
+    4: soundtrack4,
+    5: soundtrack5,
+}
 
 # Timers for shooting and spawning
 score = 0
 explosion_time = 30 
-missile_homing_speed = 10
+missile_homing_speed = 8
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
@@ -153,12 +169,15 @@ missile_delay = 200
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 30
-explosionSound.set_volume(0.5)  
+explosionSound.set_volume(0.3) 
+gunshotSound.set_volume(0.1) 
+missileSound.set_volume(0.5)
 player_health = 3
 player_max_health = 3
 player_lives = 3
 font = pygame.font.SysFont(None, 28)
 bg_offset = 0
+soundtrack1, soundtrack2, soundtrack3, soundtrack4, soundtrack5 = 0.5, 0.5, 0.5, 0.5, 0.5
 
 # Draw function to render the game state
 def Draw():
@@ -213,6 +232,11 @@ while running:
         debugger.add_line(ebullet.getPos(), (ebullet.getXPos() + enemyBullet_width // 2, ebullet.getYPos() + enemyBullet_height), (0, 0, 255))
     debugger.draw()
 
+    # soundtrack
+    random.randint(1, 5)
+
+
+
     # Scrolling Background
     bg_offset += 1
     if bg_offset >= BG.get_height():
@@ -225,6 +249,7 @@ while running:
         bullet_y = player.getYPos()
         bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y))
         shoot_timer = 0
+        gunshotSound.play()
 
     # Player Missile Shooting 
     if missile_cooldown > 0:
@@ -234,6 +259,7 @@ while running:
         missile_y = player.getYPos()
         missiles.append(PlayerMissile(surface, playerMissileSprite, missile_x, missile_y))
         missile_cooldown = missile_delay
+        missileSound.play()
 
     # Move Player Bullets
     for bullet in bullets[:]:
