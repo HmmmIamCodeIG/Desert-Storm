@@ -2,19 +2,6 @@ import pygame
 import random
 import math
 
-class VisualDebugger:
-    def __init__(self, surface):
-        self._surface = surface 
-        self._debug_lines = []
-
-    def add_line(self, start_pos, end_pos, color=(255, 0, 0)):
-        self._debug_lines.append((start_pos, end_pos, color))
-
-    def draw(self):
-        for start_pos, end_pos, color in self._debug_lines:
-            pygame.draw.line(self._surface, color, start_pos, end_pos)
-        self._debug_lines.clear()
-
 class GameObject:
     def __init__(self, surface, sprite, xPos, yPos, speed):
         self._surface = surface
@@ -98,7 +85,6 @@ class PlayerMissile(GameObject):
         self._yPos -= self._speed
 
 # Initialisation 
-
 pygame.init()
 
 screenWidth = 320
@@ -174,7 +160,7 @@ missile_homing_speed = 8
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 0
+missile_delay = 480
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 30
@@ -223,19 +209,6 @@ while running:
 
     keys = pygame.key.get_pressed()
     player.Movement(keys)
-
-    # Visual Debugger
-    debugger = VisualDebugger(surface)
-    debugger.add_line(player.getPos(), (player.getXPos() + playerMovingForwardSprite.get_width() // 2, player.getYPos() + playerMovingForwardSprite.get_height()), (0, 255, 0))  # Player position line
-    for bullet in bullets:
-        debugger.add_line(bullet.getPos(), (bullet.getXPos() + bullet_width // 2, bullet.getYPos() + bullet_height), (255, 255, 0))
-    for missile in missiles:
-        debugger.add_line(missile.getPos(), (missile.getXPos() + missile_width // 2, missile.getYPos() + missile_height), (255, 0, 0))
-    for enemy in enemies:
-        debugger.add_line(enemy.getPos(), (enemy.getXPos() + enemySprite.get_width() // 2, enemy.getYPos() + enemySprite.get_height()), (255, 0, 255))
-    for ebullet in enemyBullets:
-        debugger.add_line(ebullet.getPos(), (ebullet.getXPos() + enemyBullet_width // 2, ebullet.getYPos() + enemyBullet_height), (0, 0, 255))
-    debugger.draw()
 
     # Scrolling Background
     bg_offset += 1
