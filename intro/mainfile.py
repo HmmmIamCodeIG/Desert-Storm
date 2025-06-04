@@ -4,7 +4,7 @@ import math
 
 class VisualDebugger:
     def __init__(self, surface):
-        self._surface = surface
+        self._surface = surface 
         self._debug_lines = []
 
     def add_line(self, start_pos, end_pos, color=(255, 0, 0)):
@@ -148,11 +148,19 @@ audiopath = {
     2: pygame.mixer.Sound("Intro/soundtrack/soundtrack2.mp3"),
     3: pygame.mixer.Sound("Intro/soundtrack/soundtrack3.mp3"),
     4: pygame.mixer.Sound("Intro/soundtrack/soundtrack4.mp3"),
-    5: pygame.mixer.Sound("Intro/soundtrack/soundtrack5.mp3")
+    5: pygame.mixer.Sound("Intro/soundtrack/soundtrack5.mp3"),
+    6: pygame.mixer.Sound("Intro/soundtrack/soundtrack6.mp3"),
+    7: pygame.mixer.Sound("Intro/soundtrack/soundtrack7.mp3")
 }
 
-for i in range(1, 6):
-    audiopath[i].set_volume(0.50)
+soundtrack_choice = random.randint(1, 7)
+current_soundtrack = audiopath[soundtrack_choice]
+current_soundtrack.play(-1)
+
+for i in range(1, 7):
+    audiopath[i].set_volume(0.70)
+    if i == soundtrack_choice:
+        print(f"Current soundtrack: Soundtrack {i}")
 
 # Fx volume
 explosionSound.set_volume(0.3) 
@@ -166,7 +174,7 @@ missile_homing_speed = 8
 shoot_timer = 0
 shoot_delay = 8
 missile_cooldown = 0
-missile_delay = 200
+missile_delay = 0
 enemy_spawn_timer = 0
 enemy_spawn_delay = 40
 enemy_shoot_delay = 30
@@ -204,10 +212,6 @@ def Draw():
     # Draw score 
     score_text = font.render(f"Score: {score}", True, (255, 255, 255))
     surface.blit(score_text, (5, 5 + lives_text.get_height() + health_text.get_height() + 10))
-
-soundtrack_choice = random.randint(1, 5)
-current_soundtrack = audiopath[soundtrack_choice]
-current_soundtrack.play(-1)
 
 # Main loop
 running = True
