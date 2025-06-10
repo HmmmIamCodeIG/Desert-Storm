@@ -24,6 +24,34 @@ class GameObject:
 
     def get_rect(self):
         return pygame.Rect(self._xPos, self._yPos, self._sprite.get_width(), self._sprite.get_height())
+    
+    def Draw():
+        global bg_offset  
+        bg_offset_int = int(bg_offset)
+        BG_height = BG.get_height()
+        surface.blit(BG, (0, bg_offset_int - BG_height))
+        surface.blit(BG, (0, bg_offset_int))
+    
+        for bullet in bullets:
+            bullet.drawSprite()
+        for missile in missiles:
+            missile.drawSprite()
+        for enemy in enemies:
+            enemy.drawSprite()
+        for ebullet in enemyBullets:
+            ebullet.drawSprite()
+        for exp in explosions:
+            surface.blit(explosionSprite, (exp[0], exp[1]))
+        player.drawSprite()
+        # Draw lives 
+        lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
+        surface.blit(lives_text, (5, 5))
+        # Draw health 
+        health_text = font.render(f"Health: {player_health}", True, (255, 255, 255))
+        surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
+        # Draw score 
+        score_text = font.render(f"Score: {score}", True, (255, 255, 255))
+        surface.blit(score_text, (5, 5 + lives_text.get_height() + health_text.get_height() + 10))
 
 class Player(GameObject):
     def __init__(self, surface, moving_forward_sprite, moving_left_sprite, moving_right_sprite, xPos, yPos):
@@ -143,6 +171,7 @@ soundtrack_choice = random.randint(1, 7)
 current_soundtrack = audiopath[soundtrack_choice]
 current_soundtrack.play(-1)
 
+# Set volume for each soundtrack
 for i in range(1, 7):
     audiopath[i].set_volume(0.70)
     if i == soundtrack_choice:
@@ -157,47 +186,15 @@ missileSound.set_volume(0.5)
 score = 0
 explosion_time = 30 
 missile_homing_speed = 8
-shoot_timer = 0
 shoot_delay = 8
-missile_cooldown = 0
-missile_delay = 480
-enemy_spawn_timer = 0
+missile_delay = 400
 enemy_spawn_delay = 40
 enemy_shoot_delay = 30
 player_health = 3
-player_max_health = 3
 player_lives = 3
 font = pygame.font.SysFont(None, 28)
 bg_offset = 0
 
-# Draw function to render the game state
-def Draw():
-    global bg_offset  
-    bg_offset_int = int(bg_offset)
-    BG_height = BG.get_height()
-    surface.blit(BG, (0, bg_offset_int - BG_height))
-    surface.blit(BG, (0, bg_offset_int))
-
-    for bullet in bullets:
-        bullet.drawSprite()
-    for missile in missiles:
-        missile.drawSprite()
-    for enemy in enemies:
-        enemy.drawSprite()
-    for ebullet in enemyBullets:
-        ebullet.drawSprite()
-    for exp in explosions:
-        surface.blit(explosionSprite, (exp[0], exp[1]))
-    player.drawSprite()
-    # Draw lives 
-    lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
-    surface.blit(lives_text, (5, 5))
-    # Draw health 
-    health_text = font.render(f"Health: {player_health}", True, (255, 255, 255))
-    surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
-    # Draw score 
-    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    surface.blit(score_text, (5, 5 + lives_text.get_height() + health_text.get_height() + 10))
 
 # Main loop
 running = True
@@ -224,7 +221,8 @@ while running:
         shoot_timer = 0
         gunshotSound.play()
 
-    # Player Missile Shooting 
+    # Player Missile Shooting
+    missile_cooldown = 0 
     if missile_cooldown > 0:
         missile_cooldown -= 1
     if keys[pygame.K_SPACE] and missile_cooldown == 0: 
@@ -327,7 +325,6 @@ while running:
                 explosionSound.play()
                 pygame.display.update()
                 if player_lives <= 0:
-                    Draw()
                     pygame.display.update()
                     pygame.time.delay(500)
                     running = False
@@ -338,6 +335,7 @@ while running:
                 break
         
     # Enemy plane-player collisions
+    player_max_health = 0
     for enemy in enemies[:]:
         if enemy.get_rect().colliderect(player.get_rect()):
             player_health -= 3
@@ -363,8 +361,9 @@ while running:
         if exp[2] <= 0:
             explosions.remove(exp)
 
-    Draw()
+    GameObject.Draw()
     pygame.display.update()
     clock.tick(cSpeed)
 
 pygame.quit()
+
