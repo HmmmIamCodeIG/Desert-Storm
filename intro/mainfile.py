@@ -96,15 +96,15 @@ class Explosion:
 class Game:
     def __init__(self):
         pygame.init()
-        self.__screenWidth = 320
-        self.__screenHeight = 480
-        self.__surface = pygame.display.set_mode((self.screenWidth, self.screenHeight))
+        self.screenWidth = 320
+        self.screenHeight = 480
+        self.surface = pygame.display.set_mode((self.screenWidth, self.screenHeight))
         pygame.display.set_caption("gametest")
 
-        self.__clock = pygame.time.Clock()
-        self.__cSpeed = 60
+        self.clock = pygame.time.Clock()
+        self.cSpeed = 60
 
-        self.__font = pygame.font.SysFont(None, 28)
+        self.font = pygame.font.SysFont(None, 28)
         # Game state
         self.score = 0
         self.player_health = 3
