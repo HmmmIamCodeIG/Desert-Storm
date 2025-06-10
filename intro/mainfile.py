@@ -2,369 +2,354 @@ import pygame
 import random
 import math
 
+# --- Asset Manager ---
+class AssetManager:
+    def __init__(self, screen_width, screen_height):
+        # Load and scale background image
+        self.bg = pygame.transform.scale(
+            pygame.image.load("Intro/libraryofimages/water.jpg").convert(), (screen_width, screen_height))
+
+        # Load player sprites for different directions
+        self.player_sprites = {
+            "forward": pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha(),
+            "left": pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha(),
+            "right": pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha(),
+        }
+
+        # Load enemy sprite
+        self.enemy_sprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
+
+        # Make bullet/missile/enemy bullet sprites as simple colored rectangles
+        self.player_bullet = pygame.Surface((4, 6), pygame.SRCALPHA)
+        self.player_bullet.fill((255, 255, 0))
+        self.player_missile = pygame.Surface((6, 12), pygame.SRCALPHA)
+        self.player_missile.fill((255, 0, 0))
+        self.enemy_bullet = pygame.Surface((4, 6), pygame.SRCALPHA)
+        self.enemy_bullet.fill((0, 255, 255))
+
+        # Load and scale explosion sprite
+        self.explosion = pygame.transform.scale(
+            pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha(), (32, 32))
+
+        # Load all sounds (fx and soundtracks)
+        self.sounds = {
+            "gunshot": pygame.mixer.Sound("Intro/fx/gunshot-fx-zap.wav"),
+            "missile": pygame.mixer.Sound("Intro/fx/launching-missile-313226.mp3"),
+            "explosion": pygame.mixer.Sound("Intro/fx/dry-explosion-fx.wav"),
+            "soundtracks": [pygame.mixer.Sound(f"Intro/soundtrack/soundtrack{i}.mp3") for i in range(1, 8)]
+        }
+
+        # Load font
+        self.font = pygame.font.SysFont(None, 28)
+
+# --- Game Entities ---
 class GameObject:
-    def __init__(self, surface, sprite, xPos, yPos, speed):
-        self._surface = surface
-        self._sprite = sprite
-        self._xPos = xPos
-        self._yPos = yPos
-        self._speed = speed
+    def __init__(self, surface, sprite, x, y, speed):
+        self.surface = surface
+        self.sprite = sprite
+        self.x = x
+        self.y = y
+        self.speed = speed
 
-    def getXPos(self):
-        return self._xPos
-
-    def getYPos(self):
-        return self._yPos
-
-    def getPos(self):
-        return (self._xPos, self._yPos)
-
-    def drawSprite(self):
-        self._surface.blit(self._sprite, (self._xPos, self._yPos))
+    def draw(self):
+        self.surface.blit(self.sprite, (self.x, self.y))
 
     def get_rect(self):
-        return pygame.Rect(self._xPos, self._yPos, self._sprite.get_width(), self._sprite.get_height())
+        return pygame.Rect(self.x, self.y, self.sprite.get_width(), self.sprite.get_height())
 
 class Player(GameObject):
-    def __init__(self, surface, moving_forward_sprite, moving_left_sprite, moving_right_sprite, xPos, yPos):
-        super().__init__(surface, moving_forward_sprite, xPos, yPos, 5)
-        self._default_sprite = moving_forward_sprite
-        self._moving_left_sprite = moving_left_sprite
-        self._moving_right_sprite = moving_right_sprite
-            
-    def Movement(self, keysPressed):
-        moved_left = False
-        moved_right = False
-        if keysPressed[pygame.K_UP] or keysPressed[pygame.K_w]:
-            self._yPos -= self._speed
-        if keysPressed[pygame.K_DOWN] or keysPressed[pygame.K_s]:
-            self._yPos += self._speed
-        if keysPressed[pygame.K_RIGHT] or keysPressed[pygame.K_d]:
-            self._xPos += self._speed
+
+    def __init__(self, surface, sprites, x, y):
+        super().__init__(surface, sprites["forward"], x, y, 5)
+        self.sprites = sprites
+
+    def move(self, keys):
+
+        moved_left = moved_right = False
+        if keys[pygame.K_UP] or keys[pygame.K_w]:
+            self.y -= self.speed
+        if keys[pygame.K_DOWN] or keys[pygame.K_s]:
+            self.y += self.speed
+        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+            self.x += self.speed
             moved_right = True
-        elif keysPressed[pygame.K_LEFT] or keysPressed[pygame.K_a]:
-            self._xPos -= self._speed
+        elif keys[pygame.K_LEFT] or keys[pygame.K_a]:
+            self.x -= self.speed
             moved_left = True
 
-        self._xPos = max(0, min(self._xPos, self._surface.get_width() - self._sprite.get_width()))
-        self._yPos = max(0, min(self._yPos, self._surface.get_height() - self._sprite.get_height()))
+        # Prevent moving out of the screen bounds
+        self.x = max(0, min(self.x, self.surface.get_width() - self.sprite.get_width()))
+        self.y = max(0, min(self.y, self.surface.get_height() - self.sprite.get_height()))
 
+        # Change sprite based on direction
         if moved_left:
-            self._sprite = self._moving_left_sprite
+            self.sprite = self.sprites["left"]
         elif moved_right:
-            self._sprite = self._moving_right_sprite
+            self.sprite = self.sprites["right"]
         else:
-            self._sprite = self._default_sprite
+            self.sprite = self.sprites["forward"]
 
-class PlayerBullet(GameObject):
-    def __init__(self, surface, sprite, xPos, yPos):
-        super().__init__(surface, sprite, xPos, yPos, 10)
+class Bullet(GameObject):
+    def __init__(self, surface, sprite, x, y, speed, direction):
+        super().__init__(surface, sprite, x, y, speed)
+        self.direction = direction  # -1 for up (player), 1 for down (enemy)
 
-    def Movement(self):
-        self._yPos -= self._speed
+    def move(self):
+        self.y += self.speed * self.direction
 
-class Enemy(GameObject):
-    def __init__(self, surface, sprite, xPos, yPos):
-        super().__init__(surface, sprite, xPos, yPos, 3)
+class Missile(GameObject):
+    def __init__(self, surface, sprite, x, y):
+        super().__init__(surface, sprite, x, y, 14)
 
-    def Movement(self):
-        self._yPos += self._speed
+    def move(self):
+        self.y -= self.speed
 
-class EnemyBullet(GameObject):
-    def __init__(self, surface, sprite, xPos, yPos):
-        super().__init__(surface, sprite, xPos, yPos, 7)
-
-    def Movement(self):
-        self._yPos += self._speed
-
-class PlayerMissile(GameObject):
-    def __init__(self, surface, sprite, xPos, yPos):
-        super().__init__(surface, sprite, xPos, yPos, 14)
-
-    def Movement(self):
-        self._yPos -= self._speed
-
-# Initialisation 
-pygame.init()
-
-screenWidth = 320
-screenHeight = 480
-surface = pygame.display.set_mode((screenWidth, screenHeight))
-
-BG = pygame.image.load("Intro/libraryofimages/water.jpg").convert() 
-BG = pygame.transform.scale(BG, (screenWidth, screenHeight))  
-
-clock = pygame.time.Clock()
-cSpeed = 60
-
-title = "gametest"
-pygame.display.set_caption(title)
-
-# Load sprites and sounds for player, bullets, missiles, enemies, and enemy bullets
-playerMovingForwardSprite = pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha()
-playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha()
-playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
-bullet_width, bullet_height = 4, 6
-playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
-playerBulletSprite.fill((255, 255, 0))
-gunshotSound = pygame.mixer.Sound("Intro/fx/gunshot-fx-zap.wav")
-missile_width, missile_height = 6, 12
-playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
-playerMissileSprite.fill((255, 0, 0))
-missileSound = pygame.mixer.Sound("Intro/fx/launching-missile-313226.mp3")
-enemySprite = pygame.image.load("Intro/libraryofimages/enemyF-4.png").convert_alpha()
-enemyBullet_width, enemyBullet_height = 4, 6
-enemyBulletSprite = pygame.Surface((enemyBullet_width, enemyBullet_height), pygame.SRCALPHA)
-enemyBulletSprite.fill((0, 255, 255))
-explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png").convert_alpha()
-explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
-explosionSound = pygame.mixer.Sound("Intro/fx/dry-explosion-fx.wav")
-
-# Create player object, starting at the bottom center of the screen
-player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
-
-# Lists to hold bullets, missiles, enemies, and enemy bullets
-bullets = []
-missiles = []
-enemies = []
-enemyBullets = []
-explosions = []  
-audiopath = {
-    1: pygame.mixer.Sound("Intro/soundtrack/soundtrack1.mp3"),
-    2: pygame.mixer.Sound("Intro/soundtrack/soundtrack2.mp3"),
-    3: pygame.mixer.Sound("Intro/soundtrack/soundtrack3.mp3"),
-    4: pygame.mixer.Sound("Intro/soundtrack/soundtrack4.mp3"),
-    5: pygame.mixer.Sound("Intro/soundtrack/soundtrack5.mp3"),
-    6: pygame.mixer.Sound("Intro/soundtrack/soundtrack6.mp3"),
-    7: pygame.mixer.Sound("Intro/soundtrack/soundtrack7.mp3")
-}
-
-soundtrack_choice = random.randint(1, 7)
-current_soundtrack = audiopath[soundtrack_choice]
-current_soundtrack.play(-1)
-
-for i in range(1, 7):
-    audiopath[i].set_volume(0.70)
-    if i == soundtrack_choice:
-        print(f"Current soundtrack: Soundtrack {i}")
-
-# Fx volume
-explosionSound.set_volume(0.3) 
-gunshotSound.set_volume(0.1) 
-missileSound.set_volume(0.5)
-
-# Timers for shooting and spawning
-score = 0
-explosion_time = 30 
-missile_homing_speed = 8
-shoot_timer = 0
-shoot_delay = 8
-missile_cooldown = 0
-missile_delay = 480
-enemy_spawn_timer = 0
-enemy_spawn_delay = 40
-enemy_shoot_delay = 30
-player_health = 3
-player_max_health = 3
-player_lives = 3
-font = pygame.font.SysFont(None, 28)
-bg_offset = 0
-
-# Draw function to render the game state
-def Draw():
-    global bg_offset  
-    bg_offset_int = int(bg_offset)
-    BG_height = BG.get_height()
-    surface.blit(BG, (0, bg_offset_int - BG_height))
-    surface.blit(BG, (0, bg_offset_int))
-
-    for bullet in bullets:
-        bullet.drawSprite()
-    for missile in missiles:
-        missile.drawSprite()
-    for enemy in enemies:
-        enemy.drawSprite()
-    for ebullet in enemyBullets:
-        ebullet.drawSprite()
-    for exp in explosions:
-        surface.blit(explosionSprite, (exp[0], exp[1]))
-    player.drawSprite()
-    # Draw lives 
-    lives_text = font.render(f"Lives: {player_lives}", True, (255, 255, 255))
-    surface.blit(lives_text, (5, 5))
-    # Draw health 
-    health_text = font.render(f"Health: {player_health}", True, (255, 255, 255))
-    surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
-    # Draw score 
-    score_text = font.render(f"Score: {score}", True, (255, 255, 255))
-    surface.blit(score_text, (5, 5 + lives_text.get_height() + health_text.get_height() + 10))
-
-# Main loop
-running = True
-
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
-
-    keys = pygame.key.get_pressed()
-    player.Movement(keys)
-
-    # Scrolling Background
-    bg_offset += 1
-    if bg_offset >= BG.get_height():
-        bg_offset = 0
-
-    # Player Shooting
-    shoot_timer += 1
-    if shoot_timer >= shoot_delay: 
-        bullet_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - bullet_width // 2
-        bullet_y = player.getYPos()
-        bullets.append(PlayerBullet(surface, playerBulletSprite, bullet_x, bullet_y))
-        shoot_timer = 0
-        gunshotSound.play()
-
-    # Player Missile Shooting 
-    if missile_cooldown > 0:
-        missile_cooldown -= 1
-    if keys[pygame.K_SPACE] and missile_cooldown == 0: 
-        missile_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - missile_width // 2
-        missile_y = player.getYPos()
-        missiles.append(PlayerMissile(surface, playerMissileSprite, missile_x, missile_y))
-        missile_cooldown = missile_delay
-        missileSound.play()
-
-    # Move Player Bullets
-    for bullet in bullets[:]:
-        bullet.Movement() 
-        if bullet.getYPos() < -bullet_height:
-            bullets.remove(bullet)
-
-    # Missiles
-    for missile in missiles[:]:
-        missile.Movement()
-        if missile.getYPos() < -missile_height:
-            missiles.remove(missile)
-            continue 
-        if enemies:
-            closest_enemy = min(enemies, key=lambda e: math.hypot(
-                e.getXPos() + enemySprite.get_width() // 2 - (missile.getXPos() + missile_width // 2),
-                e.getYPos() + enemySprite.get_height() // 2 - (missile.getYPos() + missile_height // 2)
-            ))
-            missile_center_x = missile.getXPos() + missile_width // 2
-            enemy_center_x = closest_enemy.getXPos() + enemySprite.get_width() // 2
+    def home_to(self, enemy, missile_homing_speed=8):
+        if enemy:
+            missile_center_x = self.x + self.sprite.get_width() // 2
+            enemy_center_x = enemy.x + enemy.sprite.get_width() // 2
             dx = enemy_center_x - missile_center_x
-            if closest_enemy.getYPos() < missile.getYPos():
+            if enemy.y < self.y:
                 if abs(dx) > missile_homing_speed:
                     dx = missile_homing_speed if dx > 0 else -missile_homing_speed
-                missile._xPos += dx
+                self.x += dx
 
-    # Enemy Spawning
-    enemy_spawn_timer += 1.3
-    if enemy_spawn_timer >= enemy_spawn_delay:
-        enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
-        enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
-        enemy_spawn_timer = 0
+class Enemy(GameObject):
+    def __init__(self, surface, sprite, x, y):
+        super().__init__(surface, sprite, x, y, 3)
 
-    # Enemies and Enemy Shooting
-    for enemy in enemies[:]:
-        enemy.Movement()
-        if random.randint(0, enemy_shoot_delay-1) == 0:
-            ebullet_x = enemy.getXPos() + enemySprite.get_width() // 2 - enemyBullet_width // 2
-            ebullet_y = enemy.getYPos() + enemySprite.get_height()
-            enemyBullets.append(EnemyBullet(surface, enemyBulletSprite, ebullet_x, ebullet_y))
-        if enemy.getYPos() > screenHeight:
-            enemies.remove(enemy)
+    def move(self):
+        self.y += self.speed
 
-    # Enemy Bullets
-    for ebullet in enemyBullets[:]:
-        ebullet.Movement()
-        if ebullet.getYPos() > screenHeight:
-            enemyBullets.remove(ebullet)
+class Explosion:
+    def __init__(self, x, y, sprite, time=30):
+        self.x = x
+        self.y = y
+        self.sprite = sprite
+        self.time = time  # Countdown timer
 
-    # Bullet-enemy collisions
-    for bullet in bullets[:]:
-        bullet_rect = bullet.get_rect()
-        for enemy in enemies[:]:
-            enemy_rect = enemy.get_rect()
-            if bullet_rect.colliderect(enemy_rect):
-                if bullet in bullets:
-                    bullets.remove(bullet)
-                if enemy in enemies:
-                    explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
-                    explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
-                    explosions.append([explosion_x, explosion_y, explosion_time])
-                    explosionSound.play()
-                    enemies.remove(enemy)
-                    score += 1
+    def draw(self, surface):
+        surface.blit(self.sprite, (self.x, self.y))
 
-    # Missile-enemy collisions
-    for missile in missiles[:]:
-        missile_rect = missile.get_rect()
-        for enemy in enemies[:]:
-            if missile_rect.colliderect(enemy.get_rect()): 
-                if missile in missiles:
-                    missiles.remove(missile)
-                if enemy in enemies:
-                    explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
-                    explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
-                    explosions.append([explosion_x, explosion_y, explosion_time])
-                    explosionSound.play()
-                    enemies.remove(enemy)
-                    score += 1
-                break
+    def update(self):
+        self.time -= 1
+        return self.time > 0
 
-    # Enemy bullet-player collisions (lives & health system)
-    for ebullet in enemyBullets[:]:
-        if ebullet.get_rect().colliderect(player.get_rect()):
-            player_health -= 1
-            enemyBullets.remove(ebullet)
-            if player_health <= 0:
-                player_lives -= 1
-                explosion_x = player.getXPos() + playerMovingForwardSprite.get_width() // 2 - explosionSprite.get_width() // 2
-                explosion_y = player.getYPos() + playerMovingForwardSprite.get_height() // 2 - explosionSprite.get_height() // 2
-                explosions.append([explosion_x, explosion_y, explosion_time])
-                explosionSound.play()
-                pygame.display.update()
-                if player_lives <= 0:
-                    Draw()
+# --- The Game Class ---
+class Game:
+    def __init__(self):
+        # Initialise pygame and window
+        pygame.init()
+        self.screen_width, self.screen_height = 320, 480
+        self.surface = pygame.display.set_mode((self.screen_width, self.screen_height))
+        pygame.display.set_caption("gametest")
+        self.clock = pygame.time.Clock()
+        self.assets = AssetManager(self.screen_width, self.screen_height)
+        self.bg_offset = 0  # For scrolling background
+
+        # Entities and state
+        self.player = Player(self.surface, self.assets.player_sprites,
+                             (self.screen_width - self.assets.player_sprites["forward"].get_width()) // 2,
+                             self.screen_height - self.assets.player_sprites["forward"].get_height())
+        self.bullets = []
+        self.missiles = []
+        self.enemies = []
+        self.enemy_bullets = []
+        self.explosions = []
+        self.score = 0
+        self.player_health = 3
+        self.player_lives = 3
+
+        # Timers
+        self.shoot_timer = 0
+        self.shoot_delay = 8
+        self.missile_cooldown = 0
+        self.missile_delay = 480
+        self.enemy_spawn_timer = 0
+        self.enemy_spawn_delay = 40
+        self.enemy_shoot_delay = 30
+
+        # Audio: play a random soundtrack, set volumes for sfx
+        self.current_soundtrack = random.choice(self.assets.sounds["soundtracks"])
+        self.current_soundtrack.play(-1)
+        self.assets.sounds["explosion, missile, gunshot"].set_volume(0.3)
+
+    def handle_input(self):
+        keys = pygame.key.get_pressed()
+        self.player.move(keys)
+        # Player shooting (auto-fire)
+        self.shoot_timer += 1
+        if self.shoot_timer >= self.shoot_delay:
+            px = self.player.x + self.player.sprite.get_width() // 2 - self.assets.player_bullet.get_width() // 2
+            py = self.player.y
+            self.bullets.append(Bullet(self.surface, self.assets.player_bullet, px, py, 10, -1))
+            self.shoot_timer = 0
+            self.assets.sounds["gunshot"].play()
+        # Player missile (spacebar)
+        if self.missile_cooldown > 0:
+            self.missile_cooldown -= 1
+        if keys[pygame.K_SPACE] and self.missile_cooldown == 0:
+            mx = self.player.x + self.player.sprite.get_width() // 2 - self.assets.player_missile.get_width() // 2
+            my = self.player.y
+            self.missiles.append(Missile(self.surface, self.assets.player_missile, mx, my))
+            self.missile_cooldown = self.missile_delay
+            self.assets.sounds["missile"].play()
+
+    def update(self):
+        # Scroll background
+        self.bg_offset += 1
+        if self.bg_offset >= self.assets.bg.get_height():
+            self.bg_offset = 0
+
+        # Move player bullets and remove if off-screen
+        self.bullets[:] = [b for b in self.bullets if b.y > -b.sprite.get_height() and not b.move()]
+
+        # Move missiles and make them home in on closest enemy
+        for missile in self.missiles[:]:
+            missile.move()
+            if missile.y < -missile.sprite.get_height():
+                self.missiles.remove(missile)
+                continue
+            if self.enemies:
+                closest_enemy = min(self.enemies, key=lambda e: math.hypot(
+                    e.x + e.sprite.get_width() // 2 - (missile.x + missile.sprite.get_width() // 2),
+                    e.y + e.sprite.get_height() // 2 - (missile.y + missile.sprite.get_height() // 2)
+                ))
+                missile.home_to(closest_enemy)
+
+        # Spawn new enemies at intervals
+        self.enemy_spawn_timer += 1.3
+        if self.enemy_spawn_timer >= self.enemy_spawn_delay:
+            ex = random.randint(0, self.screen_width - self.assets.enemy_sprite.get_width())
+            self.enemies.append(Enemy(self.surface, self.assets.enemy_sprite, ex, 0))
+            self.enemy_spawn_timer = 0
+        # Move enemies and fire enemy bullets randomly
+        for enemy in self.enemies[:]:
+            enemy.move()
+            if random.randint(0, self.enemy_shoot_delay-1) == 0:
+                ex = enemy.x + enemy.sprite.get_width() // 2 - self.assets.enemy_bullet.get_width() // 2
+                ey = enemy.y + enemy.sprite.get_height()
+                self.enemy_bullets.append(Bullet(self.surface, self.assets.enemy_bullet, ex, ey, 7, 1))
+            if enemy.y > self.screen_height:
+                self.enemies.remove(enemy)
+
+        # Move enemy bullets and remove if off-screen
+        self.enemy_bullets[:] = [b for b in self.enemy_bullets if b.y < self.screen_height and not b.move()]
+
+        # Handle all collisions
+        self.handle_collisions()
+
+        # Update explosions and remove finished ones
+        self.explosions[:] = [exp for exp in self.explosions if exp.update()]
+
+    def handle_collisions(self):
+        # Player bullet-enemy collisions
+        for bullet in self.bullets[:]:
+            for enemy in self.enemies[:]:
+                if bullet.get_rect().colliderect(enemy.get_rect()):
+                    self.bullets.remove(bullet)
+                    self.explosions.append(Explosion(
+                        enemy.x + enemy.sprite.get_width() // 2 - self.assets.explosion.get_width() // 2,
+                        enemy.y + enemy.sprite.get_height() // 2 - self.assets.explosion.get_height() // 2,
+                        self.assets.explosion))
+                    self.assets.sounds["explosion"].play()
+                    self.enemies.remove(enemy)
+                    self.score += 1
+                    break
+        # Missile-enemy collisions
+        for missile in self.missiles[:]:
+            for enemy in self.enemies[:]:
+                if missile.get_rect().colliderect(enemy.get_rect()):
+                    self.missiles.remove(missile)
+                    self.explosions.append(Explosion(
+                        enemy.x + enemy.sprite.get_width() // 2 - self.assets.explosion.get_width() // 2,
+                        enemy.y + enemy.sprite.get_height() // 2 - self.assets.explosion.get_height() // 2,
+                        self.assets.explosion))
+                    self.assets.sounds["explosion"].play()
+                    self.enemies.remove(enemy)
+                    self.score += 1
+                    break
+        # Enemy bullet-player collisions
+        for ebullet in self.enemy_bullets[:]:
+            if ebullet.get_rect().colliderect(self.player.get_rect()):
+                self.player_health -= 1
+                self.enemy_bullets.remove(ebullet)
+                if self.player_health <= 0:
+                    self.player_lives -= 1
+                    self.explosions.append(Explosion(
+                        self.player.x + self.player.sprite.get_width() // 2 - self.assets.explosion.get_width() // 2,
+                        self.player.y + self.player.sprite.get_height() // 2 - self.assets.explosion.get_height() // 2,
+                        self.assets.explosion))
+                    self.assets.sounds["explosion"].play()
                     pygame.display.update()
                     pygame.time.delay(500)
-                    running = False
-                else:
-                    player_health = player_max_health
-                    player._xPos = (screenWidth - playerMovingForwardSprite.get_width()) // 2
-                    player._yPos = screenHeight - playerMovingForwardSprite.get_height()
+                    if self.player_lives <= 0:
+                        self.running = False
+                    else:
+                        # Reset player position and health
+                        self.player_health = 3
+                        self.player.x = (self.screen_width - self.player.sprite.get_width()) // 2
+                        self.player.y = self.screen_height - self.player.sprite.get_height()
                 break
-        
-    # Enemy plane-player collisions
-    for enemy in enemies[:]:
-        if enemy.get_rect().colliderect(player.get_rect()):
-            player_health -= 3
-            enemies.remove(enemy)
-            explosion_x = enemy.getXPos() + enemySprite.get_width() // 2 - explosionSprite.get_width() // 2
-            explosion_y = enemy.getYPos() + enemySprite.get_height() // 2 - explosionSprite.get_height() // 2
-            explosions.append([explosion_x, explosion_y, explosion_time])
-            explosionSound.play()
+        # Enemy-player collisions
+        for enemy in self.enemies[:]:
+            if enemy.get_rect().colliderect(self.player.get_rect()):
+                self.player_health -= 3
+                self.enemies.remove(enemy)
+                self.explosions.append(Explosion(
+                    enemy.x + enemy.sprite.get_width() // 2 - self.assets.explosion.get_width() // 2,
+                    enemy.y + enemy.sprite.get_height() // 2 - self.assets.explosion.get_height() // 2,
+                    self.assets.explosion))
+                self.assets.sounds["explosion"].play()
+                pygame.display.update()
+                if self.player_health <= 0:
+                    self.player_lives -= 1
+                    if self.player_lives <= 0:
+                        self.running = False
+                    else:
+                        self.player_health = 3
+                        self.player.x = (self.screen_width - self.player.sprite.get_width()) // 2
+                        self.player.y = self.screen_height - self.player.sprite.get_height()
+                break
+
+    def draw(self):
+        # Draw scrolling background
+        bg_height = self.assets.bg.get_height()
+        offset = int(self.bg_offset)
+        self.surface.blit(self.assets.bg, (0, offset - bg_height))
+        self.surface.blit(self.assets.bg, (0, offset))
+
+        # Draw all game objects and explosions
+        for obj_list in [self.bullets, self.missiles, self.enemies, self.enemy_bullets]:
+            for obj in obj_list:
+                obj.draw()
+        for exp in self.explosions:
+            exp.draw(self.surface)
+        self.player.draw()
+
+        # Draw HUD
+        y = 5
+        lives_text = self.assets.font.render(f"Lives: {self.player_lives}", True, (255,255,255))
+        self.surface.blit(lives_text, (5, y))
+        y += lives_text.get_height() + 5
+        health_text = self.assets.font.render(f"Health: {self.player_health}", True, (255,255,255))
+        self.surface.blit(health_text, (5, y))
+        y += health_text.get_height() + 5
+        score_text = self.assets.font.render(f"Score: {self.score}", True, (255,255,255))
+        self.surface.blit(score_text, (5, y))
+
+    def run(self):
+        self.running = True
+        while self.running:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.running = False
+            self.handle_input()
+            self.update()
+            self.draw()
             pygame.display.update()
-            if player_health <= 0:
-                player_lives -= 1
-                if player_lives <= 0:
-                    running = False
-                else:
-                    player_health = player_max_health
-                    player._xPos = (screenWidth - playerMovingForwardSprite.get_width()) // 2
-                    player._yPos = screenHeight - playerMovingForwardSprite.get_height()
-            break
+            self.clock.tick(60)
+        pygame.quit()
 
-    # Update and remove finished explosions
-    for exp in explosions[:]:
-        exp[2] -= 1
-        if exp[2] <= 0:
-            explosions.remove(exp)
-
-    Draw()
-    pygame.display.update()
-    clock.tick(cSpeed)
-
-pygame.quit()
+if __name__ == "__main__":
+    Game().run()
