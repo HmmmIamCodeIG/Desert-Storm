@@ -37,9 +37,9 @@ class GameObject:
         # Use global variables for drawing all game elements
         global bg_offset, BG, bullets, missiles, enemies, enemyBullets, explosions, explosionSprite, player, font, score
         # Draw the scrolling background, twice for seamless looping
-        bg_offset_int = int(bg_offset)
+        bg_offset_int = int(bg_offset) 
         BG_height = BG.get_height()
-        surface.blit(BG, (0, bg_offset_int - BG_height))
+        surface.blit(BG, (0, bg_offset_int - BG_height)) 
         surface.blit(BG, (0, bg_offset_int)) 
 
         # Draw all bullets, missiles, enemies, enemy bullets, and explosions
@@ -229,7 +229,6 @@ class Enemy(GameObject):
                 score_ref[0] += 1
                 return
 
-
 ### Functions ###
 
 # Spawn explosion at an object's position and play sound
@@ -318,7 +317,7 @@ current_soundtrack.play(-1)  # Loop indefinitely
 
 # Set volume for each soundtrack and print which one is playing
 for i in range(1, 8):
-    audiopath[i].set_volume(0.90)
+    audiopath[i].set_volume(0.60)
     if i == soundtrack_choice:
         print(f"Current soundtrack: Soundtrack {i}")
 
