@@ -91,10 +91,10 @@ class Player(GameObject):
         if keysPressed[pygame.K_UP] or keysPressed[pygame.K_w]:
             self._yPos -= self._speed
         # Move player down
-        if keysPressed[pygame.K_DOWN] or keysPressed[pygame.K_s]:
+        elif keysPressed[pygame.K_DOWN] or keysPressed[pygame.K_s]:
             self._yPos += self._speed
         # Move player right
-        if keysPressed[pygame.K_RIGHT] or keysPressed[pygame.K_d]:
+        elif keysPressed[pygame.K_RIGHT] or keysPressed[pygame.K_d]:
             self._xPos += self._speed
             moved_right = True 
         # Move player left
@@ -136,7 +136,7 @@ class Player(GameObject):
         if self.shoot_timer < self.shoot_delay:
             self.shoot_timer += 1
         # Shoot if auto_shoot is True or Z key pressed
-        if (auto_shoot or keys[pygame.K_z]) and self.shoot_timer >= self.shoot_delay:
+        if (auto_shoot) and self.shoot_timer >= self.shoot_delay:
             bullet_x = self.getXPos() + self._sprite.get_width() // 2 - bullet_width // 2
             bullet_y = self.getYPos()
             bullets.append(Projectile(self._surface, bulletSprite, bullet_x, bullet_y))
@@ -195,7 +195,7 @@ class Enemy(GameObject):
         super().__init__(surface, sprite, xPos, yPos, 3)
 
     # Move enemy down the screen
-    def Movement(self):
+    def move(self):
         self._yPos += self._speed
 
     # Enemies shoot randomly with a small chance each frame
@@ -204,6 +204,45 @@ class Enemy(GameObject):
             bullet_x = self.getXPos() + self._sprite.get_width() // 2 - enemyBullet_width // 2
             bullet_y = self.getYPos() + self._sprite.get_height()
             enemyBullets.append(Projectile(self._surface, enemyBulletSprite, bullet_x, bullet_y, direction="down"))
+
+    # Check collision with missiles and bullets, and handle explosion and removal if hit
+    def handle_collisions(self, missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score):
+        enemy_rect = self.get_rect()
+        # Check collision with missiles
+        for missile in missiles[:]:
+            missile_rect = missile.get_rect()
+            if missile_rect.colliderect(enemy_rect):
+                if missile in missiles:
+                    missiles.remove(missile)
+                spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
+                if self in enemies:
+                    enemies.remove(self)
+                score[0] += 1  # Use list to make score mutable
+                return  # Exit after collision to avoid modifying removed objects
+
+        # Check collision with bullets
+        for bullet in bullets[:]:
+            bullet_rect = bullet.get_rect()
+            if bullet_rect.colliderect(enemy_rect):
+                if bullet in bullets:
+                    bullets.remove(bullet)
+                spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
+                if self in enemies:
+                    enemies.remove(self)
+                score[0] += 1
+                return
+
+    # Update the enemy (move, shoot, handle collisions, and remove if off-screen)
+    def update(self, enemies, missiles, bullets, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height,
+               explosionSprite, explosions, explosion_time, explosionSound, screenHeight, score):
+        self.move()
+        self.shoot(enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height)
+        self.handle_collisions(missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score)
+        # Remove if off-screen
+        if self.getYPos() > screenHeight and self in enemies:
+            enemies.remove(self)
+
+
 
 ### Functions ###
 
@@ -349,8 +388,8 @@ while running:
         # Homing logic: steer missile horizontally toward closest enemy if any exist
         if enemies:
             closest_enemy = min(enemies, key=lambda e: math.hypot(
-                e.getXPos() + enemySprite.get_width() // 2 - (missile.getXPos() + missile_width // 2),
-                e.getYPos() + enemySprite.get_height() // 2 - (missile.getYPos() + missile_height // 2) 
+                e.getXPos() + enemySprite.get_width() // 2 - (missile.getXPos() + missile_width // 2), # horizontal distance
+                e.getYPos() + enemySprite.get_height() // 2 - (missile.getYPos() + missile_height // 2) # vertical distance
             ))
             missile_center_x = missile.getXPos() + missile_width // 2
             enemy_center_x = closest_enemy.getXPos() + enemySprite.get_width() // 2
@@ -374,37 +413,6 @@ while running:
         ebullet.Movement()
         if ebullet.getYPos() > screenHeight:
             enemyBullets.remove(ebullet)
-
-    # Move enemies, let them shoot, and remove if off-screen
-    for enemy in enemies[:]:
-        enemy.Movement()
-        enemy.shoot(enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height)
-        if enemy.getYPos() > screenHeight:
-            enemies.remove(enemy)
-
-    # Collisions: missile/enemy and bullet/enemy
-    for missile in missiles[:]:
-        missile_rect = missile.get_rect()
-        for enemy in enemies[:]:
-            enemy_rect = enemy.get_rect()
-            if missile_rect.colliderect(enemy_rect):
-                if missile in missiles:
-                    missiles.remove(missile)
-                if enemy in enemies:
-                    spawn_explosion_at_object(enemy, explosionSprite, explosions, explosion_time, explosionSound)
-                    enemies.remove(enemy)
-                    score += 1
-    for bullet in bullets[:]:
-        bullet_rect = bullet.get_rect()
-        for enemy in enemies[:]:
-            enemy_rect = enemy.get_rect()
-            if bullet_rect.colliderect(enemy_rect):
-                if bullet in bullets:
-                    bullets.remove(bullet)
-                if enemy in enemies:
-                    spawn_explosion_at_object(enemy, explosionSprite, explosions, explosion_time, explosionSound)
-                    enemies.remove(enemy)
-                    score += 1
 
     # Update and remove finished explosions
     for exp in explosions[:]:
