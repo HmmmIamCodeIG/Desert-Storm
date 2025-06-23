@@ -189,59 +189,45 @@ class Projectile(GameObject):
     def get_rect(self):
         return pygame.Rect(self._xPos, self._yPos, self._sprite.get_width(), self._sprite.get_height())
 
-# Enemy class for enemy aircraft
-class Enemy(GameObject):
+# Enemy class for enemy aircraftclass Enemy(GameObject):
+class Enemy(GameObject):    
     def __init__(self, surface, sprite, xPos, yPos):
         super().__init__(surface, sprite, xPos, yPos, 3)
 
-    # Move enemy down the screen
-    def move(self):
-        self._yPos += self._speed
+    def update(self, enemies, missiles, bullets, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height,
+               explosionSprite, explosions, explosion_time, explosionSound, screenHeight, score_ref):
+        self.move_and_shoot(enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height)
+        self.handle_collisions(enemies, missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score_ref)
+        if self.getYPos() > screenHeight and self in enemies:
+            enemies.remove(self)
 
-    # Enemies shoot randomly with a small chance each frame
-    def shoot(self, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height):
+    def move_and_shoot(self, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height):
+        self._yPos += self._speed
         if random.random() < 0.02:
             bullet_x = self.getXPos() + self._sprite.get_width() // 2 - enemyBullet_width // 2
             bullet_y = self.getYPos() + self._sprite.get_height()
             enemyBullets.append(Projectile(self._surface, enemyBulletSprite, bullet_x, bullet_y, direction="down"))
 
-    # Check collision with missiles and bullets, and handle explosion and removal if hit
-    def handle_collisions(self, missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score):
+    def handle_collisions(self, enemies, missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score_ref):
         enemy_rect = self.get_rect()
-        # Check collision with missiles
         for missile in missiles[:]:
-            missile_rect = missile.get_rect()
-            if missile_rect.colliderect(enemy_rect):
+            if missile.get_rect().colliderect(enemy_rect):
                 if missile in missiles:
                     missiles.remove(missile)
                 spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
                 if self in enemies:
                     enemies.remove(self)
-                score[0] += 1  # Use list to make score mutable
-                return  # Exit after collision to avoid modifying removed objects
-
-        # Check collision with bullets
+                score_ref[0] += 1
+                return
         for bullet in bullets[:]:
-            bullet_rect = bullet.get_rect()
-            if bullet_rect.colliderect(enemy_rect):
+            if bullet.get_rect().colliderect(enemy_rect):
                 if bullet in bullets:
                     bullets.remove(bullet)
                 spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
                 if self in enemies:
                     enemies.remove(self)
-                score[0] += 1
+                score_ref[0] += 1
                 return
-
-    # Update the enemy (move, shoot, handle collisions, and remove if off-screen)
-    def update(self, enemies, missiles, bullets, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height,
-               explosionSprite, explosions, explosion_time, explosionSound, screenHeight, score):
-        self.move()
-        self.shoot(enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height)
-        self.handle_collisions(missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score)
-        # Remove if off-screen
-        if self.getYPos() > screenHeight and self in enemies:
-            enemies.remove(self)
-
 
 
 ### Functions ###
@@ -387,34 +373,45 @@ while running:
             continue 
         # Homing logic: steer missile horizontally toward closest enemy if any exist
         if enemies:
-            closest_enemy = min(enemies, key=lambda e: math.hypot(
-                e.getXPos() + enemySprite.get_width() // 2 - (missile.getXPos() + missile_width // 2), # horizontal distance
-                e.getYPos() + enemySprite.get_height() // 2 - (missile.getYPos() + missile_height // 2) # vertical distance
+            # calculate euclidean distance between missile and each enemy and find the closest enemy
+            closest_enemy = min(enemies, key=lambda e: math.hypot( 
+                e.getXPos() + enemySprite.get_width() // 2 - (missile.getXPos() + missile_width // 2), 
+                e.getYPos() + enemySprite.get_height() // 2 - (missile.getYPos() + missile_height // 2) 
             ))
+            # Calculate the horizontal distance to the closest enemy and adjust the missile's x position to home in on it
             missile_center_x = missile.getXPos() + missile_width // 2
             enemy_center_x = closest_enemy.getXPos() + enemySprite.get_width() // 2
             dx = enemy_center_x - missile_center_x
             # Only home if enemy is above missile
             if closest_enemy.getYPos() < missile.getYPos():
                 # Cap the homing change per frame
-                if abs(dx) > missile_homing_speed:
-                    dx = missile_homing_speed if dx > 0 else -missile_homing_speed
-                missile._xPos += dx
+                if abs(dx) > missile_homing_speed: # if the distance is greater than the homing speed, cap it
+                    dx = missile_homing_speed if dx > 0 else -missile_homing_speed # cap the change to the homing speed
+                missile._xPos += dx # apply the horizontal change to the missile position
 
-    # Enemy spawning logic (spawn new enemies at random x on top)
     enemy_spawn_timer += 1.3 
     if enemy_spawn_timer >= enemy_spawn_delay:
         enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
         enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
         enemy_spawn_timer = 0
 
-    # Move enemy bullets and remove if off-screen
     for ebullet in enemyBullets[:]:
         ebullet.Movement()
         if ebullet.getYPos() > screenHeight:
             enemyBullets.remove(ebullet)
 
-    # Update and remove finished explosions
+    # Enemy update and collision logic handled inside class now
+    score_ref = [score]  # mutable reference for score
+    for enemy in enemies[:]:
+        enemy.update(
+            enemies, missiles, bullets,
+            enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height,
+            explosionSprite, explosions, explosion_time, explosionSound,
+            screenHeight, score_ref
+        )
+    score = score_ref[0]
+
+# Handle enemy bullet collisions with player
     for exp in explosions[:]:
         exp[2] -= 1
         if exp[2] <= 0:
