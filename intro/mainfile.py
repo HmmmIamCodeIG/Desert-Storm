@@ -118,7 +118,7 @@ class Player(GameObject):
         self.health += delta
         if self.health <= 0:
             spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
-            playerLoseLifeSound.play()  # <-- FIXED
+            playerLoseLifeSound.play()
             self.lives -= 1
             if self.lives > 0:
                 # Respawn with full health, reposition to bottom center
@@ -126,7 +126,10 @@ class Player(GameObject):
                 self._xPos = (self._surface.get_width() - self._sprite.get_width()) // 2
                 self._yPos = self._surface.get_height() - self._sprite.get_height()
             else:
-                # Game Over: post QUIT event to exit main loop
+                # Game Over: display endcard image, wait, then post QUIT event to exit main loop
+                surface.blit(endcard, (0, 0))
+                pygame.display.update()
+                pygame.time.delay(5000)
                 print("Game Over")
                 pygame.event.post(pygame.event.Event(pygame.QUIT))
 
@@ -289,6 +292,10 @@ explosionSprite = pygame.image.load("Intro/libraryofimages/explosion_Boom_2.png"
 explosionSprite = pygame.transform.scale(explosionSprite, (32, 32))  
 explosionSound = pygame.mixer.Sound("Intro/fx/dry-explosion-fx.wav")
 
+# endcard
+endcard = pygame.image.load("intro/libraryofimages/dead.png")
+endcard = pygame.transform.scale(endcard, (screenWidth, screenHeight))
+
 # Instantiate the player object at bottom center
 player = Player(surface, playerMovingForwardSprite, playerMovingLeftSprite, playerMovingRightSprite, (screenWidth - playerMovingForwardSprite.get_width()) // 2, screenHeight - playerMovingForwardSprite.get_height())
 
@@ -322,10 +329,10 @@ for i in range(1, 8):
         print(f"Current soundtrack: Soundtrack {i}")
 
 # Set volumes for sound effects
-explosionSound.set_volume(0.3) 
+explosionSound.set_volume(0.1) 
 gunshotSound.set_volume(0.1) 
 missileSound.set_volume(0.5)
-playerLoseLifeSound.set_volume(20)
+playerLoseLifeSound.set_volume(1)
 
 # Initialise score, explosion duration, missile homing speed, enemy spawn timings, and font
 score = 0
