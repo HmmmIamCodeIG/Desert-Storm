@@ -9,21 +9,22 @@ screen = pygame.display.set_mode((320, 480))
 mock_sprite = pygame.Surface((10, 10))
 
 class TestGameObject(unittest.TestCase):
-    def test_position_set_and_get(self):
+    def test_position_set_and_get(self): # checking if the class correctly stores and returns its position
         obj = GameObject(screen, mock_sprite, 100, 150, 5)
         self.assertEqual(obj.getXPos(), 100)
         self.assertEqual(obj.getYPos(), 150)
         self.assertEqual(obj.getPos(), (100, 150))
 
-    def test_get_rect(self):
+    def test_get_rect(self):  # if the rectangle matches expected coordinates
         obj = GameObject(screen, mock_sprite, 50, 60, 0)
         rect = obj.get_rect()
         self.assertEqual(rect.topleft, (50, 60))
         self.assertEqual(rect.width, 10)
         self.assertEqual(rect.height, 10)
 
+# verify movement logic
 class TestProjectile(unittest.TestCase):
-    def test_projectile_movement_up(self):
+    def test_projectile_movement_up(self): 
         proj = Projectile(screen, mock_sprite, 100, 100, direction="up")
         proj.Movement()
         self.assertEqual(proj.getYPos(), 90)
@@ -33,6 +34,7 @@ class TestProjectile(unittest.TestCase):
         proj.Movement()
         self.assertEqual(proj.getYPos(), 110)
 
+# Checks if player position is kept within screen bounds and health and respawn system works
 class TestPlayer(unittest.TestCase):
     def setUp(self):
         self.player = Player(
@@ -60,7 +62,7 @@ class TestPlayer(unittest.TestCase):
         self.assertEqual(self.player.health, 3)
 
 class TestEnemy(unittest.TestCase):
-    def setUp(self):
+    def setUp(self): # check enemy positions and 
         self.enemy = Enemy(screen, mock_sprite, 100, 100)
         self.enemy2 = Enemy(screen, mock_sprite, 120, 100)
         self.bullets = []
@@ -71,21 +73,21 @@ class TestEnemy(unittest.TestCase):
         self.mock_sound = pygame.mixer.Sound(buffer=b"\x00\x00")
         self.score_ref = [0]
 
-    def test_collision_with_missile(self):
+    def test_collision_with_missile(self): # check collision with the missiles
         missile = Projectile(screen, mock_sprite, 100, 100)
         self.missiles.append(missile)
         self.enemy.handle_collisions(self.enemies, self.missiles, self.bullets, mock_sprite, self.explosions, 30, self.mock_sound, self.score_ref)
         self.assertEqual(len(self.enemies), 1)
         self.assertEqual(self.score_ref[0], 1)
 
-    def test_shooting_probability(self):
+    def test_shooting_probability(self): # check collision with the bullet
         count = 0
         for _ in range(1000):
             e = Enemy(screen, mock_sprite, 100, 0)
             e.move_and_shoot(self.enemyBullets, mock_sprite, 5, 10)
             count += len(self.enemyBullets)
             self.enemyBullets.clear()
-        self.assertTrue(10 <= count <= 30)  # ~2% chance * 1000 frames
+        self.assertTrue(10 <= count <= 30)  
 
 ### Grey Box: Test Missile Homing Logic ###
 class TestMissileHoming(unittest.TestCase):

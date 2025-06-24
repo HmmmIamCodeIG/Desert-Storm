@@ -6,7 +6,7 @@ import math
 
 # Base class for all game objects in the game (player, enemy, projectile, etc.)
 class GameObject:
-    # Initialize with surface to draw on, sprite image, position, and speed
+    # Initialise with surface to draw on, sprite image, position, and speed
     def __init__(self, surface, sprite, xPos, yPos, speed):
         self._surface = surface
         self._sprite = sprite
@@ -68,7 +68,7 @@ class GameObject:
 # Player class inherits from GameObject
 class Player(GameObject):
     def __init__(self, surface, moving_forward_sprite, moving_left_sprite, moving_right_sprite, xPos, yPos):
-        # Initialize player with sprites for different movement directions
+        # Initialise player with sprites for different movement directions
         super().__init__(surface, moving_forward_sprite, xPos, yPos, 5)
         self._default_sprite = moving_forward_sprite
         self._moving_left_sprite = moving_left_sprite
@@ -114,11 +114,11 @@ class Player(GameObject):
         else:
             self._sprite = self._default_sprite
 
-    # Update health, handle death and respawn, and spawn explosion
     def update_health(self, delta, explosions, explosionSprite, explosion_time, explosionSound):
         self.health += delta
         if self.health <= 0:
             spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
+            playerLoseLifeSound.play()  # <-- FIXED
             self.lives -= 1
             if self.lives > 0:
                 # Respawn with full health, reposition to bottom center
@@ -164,7 +164,6 @@ class Player(GameObject):
             if player_rect.colliderect(enemy.get_rect()):
                 enemies.remove(enemy)
                 self.update_health(-3, explosions, explosionSprite, explosion_time, explosionSound)
-                spawn_explosion_at_object(enemy, explosionSprite, explosions, explosion_time, explosionSound)
         # Collide with enemy bullets
         for ebullet in enemyBullets[:]:
             if player_rect.colliderect(ebullet.get_rect()):
@@ -268,6 +267,7 @@ enemyBullet_width, enemyBullet_height = 4, 8
 playerMovingForwardSprite = pygame.image.load("Intro/libraryofimages/FA-18moving.png").convert_alpha()
 playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movingleft.png").convert_alpha()
 playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
+playerLoseLifeSound = pygame.mixer.Sound("Intro/fx/805693__edimar_ramide__death2.wav")
 
 # Player bullet and sound
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
@@ -325,8 +325,9 @@ for i in range(1, 8):
 explosionSound.set_volume(0.3) 
 gunshotSound.set_volume(0.1) 
 missileSound.set_volume(0.5)
+playerLoseLifeSound.set_volume(20)
 
-# Initialize score, explosion duration, missile homing speed, enemy spawn timings, and font
+# Initialise score, explosion duration, missile homing speed, enemy spawn timings, and font
 score = 0
 explosion_time = 30 
 missile_homing_speed = 8
@@ -388,12 +389,14 @@ while running:
                     dx = missile_homing_speed if dx > 0 else -missile_homing_speed # cap the change to the homing speed
                 missile._xPos += dx # apply the horizontal change to the missile position
 
+    # enemy spawning
     enemy_spawn_timer += 1.3 
     if enemy_spawn_timer >= enemy_spawn_delay:
         enemy_x = random.randint(0, screenWidth - enemySprite.get_width())
         enemies.append(Enemy(surface, enemySprite, enemy_x, 0))
         enemy_spawn_timer = 0
-
+    
+    # enemy bullet movement
     for ebullet in enemyBullets[:]:
         ebullet.Movement()
         if ebullet.getYPos() > screenHeight:
@@ -412,7 +415,7 @@ while running:
 
 # Handle enemy bullet collisions with player
     for exp in explosions[:]:
-        exp[2] -= 1
+        exp[2] -= 1 
         if exp[2] <= 0:
             explosions.remove(exp)
 
