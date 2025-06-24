@@ -102,5 +102,7 @@ class TestMissileHoming(unittest.TestCase):
         missile._xPos += dx_capped
         self.assertTrue(abs(missile.getXPos() - enemy.getXPos()) <= missile_homing_speed)
 
+
 if __name__ == '__main__':
     unittest.main()
+

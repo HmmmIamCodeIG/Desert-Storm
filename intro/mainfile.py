@@ -1,6 +1,7 @@
 import pygame
 import random
 import math
+from debug_tools import HitboxDebugger
 
 ### Global variables and Classes ###
 
@@ -276,7 +277,7 @@ clock = pygame.time.Clock()
 cSpeed = 60  # Target frames per second
 
 # Set the window title bar text
-title = "gametest"
+title = "desertstorm"
 pygame.display.set_caption(title)
 
 # Define bullet and missile sprite sizes
@@ -363,6 +364,8 @@ bg_offset = 0 # Scrolling background offset
 
 ### Main game loop ###
 running = True
+show_hitboxes = False
+
 
 while running:
     # Process all events (keyboard, window close, etc.)
@@ -380,6 +383,25 @@ while running:
     player.shoot(keys, bullets, playerBulletSprite, bullet_width, gunshotSound)
     # Player fires missile if space is pressed and not on cooldown
     player.shoot_missile(keys, missiles, playerMissileSprite, missile_width, missile_height, missileSound)
+    hitbox_debugger = HitboxDebugger(surface)
+    
+
+    # Draw hitboxes (for debugging purposes only)
+    for obj in [player] + bullets + missiles + enemies + enemyBullets:
+        hitbox_debugger.draw_hitbox(obj)
+        
+    
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_h:
+                show_hitboxes = not show_hitboxes
+                
+    # Later in main loop
+    if show_hitboxes:
+        for obj in [player] + bullets + missiles + enemies + enemyBullets:
+            hitbox_debugger.draw_hitbox(obj)
 
     # Scroll the background by incrementing offset, looping when past image height
     bg_offset += 1
