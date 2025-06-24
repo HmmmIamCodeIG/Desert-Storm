@@ -208,8 +208,7 @@ class Enemy(GameObject):
         # Initialise enemy at position, set downward speed
         super().__init__(surface, sprite, xPos, yPos, 3)
 
-    def update(self, enemies, missiles, bullets, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height,
-               explosionSprite, explosions, explosion_time, explosionSound, screenHeight, score_ref):
+    def update(self, enemies, missiles, bullets, enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height, explosionSprite, explosions, explosion_time, explosionSound, screenHeight, score_ref):
         # Update enemy position, shoot, and handle collisions
         self.move_and_shoot(enemyBullets, enemyBulletSprite, enemyBullet_width, enemyBullet_height)
         self.handle_collisions(enemies, missiles, bullets, explosionSprite, explosions, explosion_time, explosionSound, score_ref)
@@ -291,12 +290,12 @@ playerMovingLeftSprite = pygame.image.load("Intro/libraryofimages/FA-18movinglef
 playerMovingRightSprite = pygame.image.load("Intro/libraryofimages/FA-18movingright.png").convert_alpha()
 playerLoseLifeSound = pygame.mixer.Sound("Intro/fx/805693__edimar_ramide__death2.wav")
 
-# Create a yellow sprite for player bullets and load gunshot sound
+# Create a sprite for player bullets and load gunshot sound
 playerBulletSprite = pygame.Surface((bullet_width, bullet_height), pygame.SRCALPHA)
 playerBulletSprite.fill((255, 255, 0))
 gunshotSound = pygame.mixer.Sound("Intro/fx/gunshot-fx-zap.wav")
 
-# Create a red sprite for player missiles and load missile launch sound
+# Create a sprite for player missiles and load missile launch sound
 playerMissileSprite = pygame.Surface((missile_width, missile_height), pygame.SRCALPHA)
 playerMissileSprite.fill((255, 0, 0))
 missileSound = pygame.mixer.Sound("Intro/fx/launching-missile-313226.mp3")
