@@ -56,10 +56,10 @@ class GameObject:
         # Draw player sprite
         player.drawSprite()
         # Draw player lives
-        lives_text = font.render(f"Lives: {player.lives}", True, (255, 255, 255))
+        lives_text = font.render(f"Lives: {player._lives}", True, (255, 255, 255))
         surface.blit(lives_text, (5, 5))
         # Draw player health
-        health_text = font.render(f"Health: {player.health}", True, (255, 255, 255))
+        health_text = font.render(f"Health: {player._health}", True, (255, 255, 255))
         surface.blit(health_text, (5, 5 + lives_text.get_height() + 5))
         # Draw player score
         score_text = font.render(f"Score: {score}", True, (255, 255, 255))
@@ -73,15 +73,15 @@ class Player(GameObject):
         self._default_sprite = moving_forward_sprite
         self._moving_left_sprite = moving_left_sprite
         self._moving_right_sprite = moving_right_sprite
-        self.health = 3
-        self.max_health = 3
-        self.lives = 3
-        self.shoot_timer = 0
-        self.shoot_delay = 8  # Ticks between allowed shots
-        self.missile_cooldown = 0
-        self.missile_delay = 480  # Delay between missile fires
-        self.score = 0
-        self.last_shoot_key = False  # Track the last shoot key 
+        self._health = 3
+        self._max_health = 3
+        self._lives = 3
+        self._shoot_timer = 0
+        self._shoot_delay = 8  # Ticks between allowed shots
+        self._missile_cooldown = 0
+        self._missile_delay = 480  # Delay between missile fires
+        self._score = 0
+        self._last_shoot_key = False  # Track the last shoot key 
 
     # Handle player movement and sprite selection based on keys pressed
     def Movement(self, keysPressed):
@@ -108,26 +108,28 @@ class Player(GameObject):
 
         # Update sprite based on movement direction
         if moved_left:
-            self._sprite = self._moving_left_sprite
+            self._sprite = self._moving_left_sprite 
         elif moved_right:
             self._sprite = self._moving_right_sprite
         else:
             self._sprite = self._default_sprite
 
+# handling health for the player 
+# delta is change in player health
     def update_health(self, delta, explosions, explosionSprite, explosion_time, explosionSound):
-        self.health += delta
-        if self.health <= 0:
+        self._health += delta # decreases object's health by value of delta. If delta is negative it subtracts from current health
+        if self._health <= 0: 
             spawn_explosion_at_object(self, explosionSprite, explosions, explosion_time, explosionSound)
             playerLoseLifeSound.play()
-            self.lives -= 1
-            if self.lives > 0:
+            self._lives -= 1
+            if self._lives > 0:
                 # Respawn with full health, reposition to bottom center
-                self.health = self.max_health
+                self._health = self._max_health
                 self._xPos = (self._surface.get_width() - self._sprite.get_width()) // 2
                 self._yPos = self._surface.get_height() - self._sprite.get_height()
             else:
                 # Game Over: display endcard image, wait, then post QUIT event to exit main loop
-                surface.blit(endcard, (0, 0))
+                self._surface.blit(endcard, (0, 0))
                 pygame.display.update()
                 pygame.time.delay(5000)
                 print("Game Over")
@@ -136,27 +138,27 @@ class Player(GameObject):
     # Handle shooting regular bullets
     def shoot(self, keys, bullets, bulletSprite, bullet_width, gunshotSound, auto_shoot=True):
         # Only shoot if enough time has passed since last shot
-        if self.shoot_timer < self.shoot_delay:
-            self.shoot_timer += 1
+        if self._shoot_timer < self._shoot_delay:
+            self._shoot_timer += 1
         # Shoot if auto_shoot is True or Z key pressed
-        if (auto_shoot) and self.shoot_timer >= self.shoot_delay:
+        if (auto_shoot) and self._shoot_timer >= self._shoot_delay:
             bullet_x = self.getXPos() + self._sprite.get_width() // 2 - bullet_width // 2
             bullet_y = self.getYPos()
             bullets.append(Projectile(self._surface, bulletSprite, bullet_x, bullet_y))
-            self.shoot_timer = 0
+            self._shoot_timer = 0
             gunshotSound.play()
 
     # Handle firing missiles (spacebar)
     def shoot_missile(self, keys, missiles, missileSprite, missile_width, missile_height, missileSound):
         # Missile cooldown logic
-        if self.missile_cooldown > 0:
-            self.missile_cooldown -= 1
+        if self._missile_cooldown > 0:
+            self._missile_cooldown -= 1
         # Shoot missile if space pressed and not on cooldown
-        if keys[pygame.K_SPACE] and self.missile_cooldown == 0:
+        if keys[pygame.K_SPACE] and self._missile_cooldown == 0:
             missile_x = self.getXPos() + self._sprite.get_width() // 2 - missile_width // 2
             missile_y = self.getYPos()
             missiles.append(Projectile(self._surface, missileSprite, missile_x, missile_y))
-            self.missile_cooldown = self.missile_delay
+            self._missile_cooldown = self._missile_delay
             missileSound.play()
 
     # Handle collisions with enemies and enemy bullets
@@ -177,15 +179,15 @@ class Player(GameObject):
 class Projectile(GameObject):
     def __init__(self, surface, sprite, xPos, yPos, direction="up"): 
         super().__init__(surface, sprite, xPos, yPos, 10)
-        self.direction = direction
+        self._direction = direction
 
     # Move projectile up (player) or down (enemy)
     def Movement(self):
-        if self.direction == "up": 
+        if self._direction == "up": 
             self._yPos -= self._speed
             if self._yPos < -self._sprite.get_height():
                 self._yPos = -self._sprite.get_height()
-        elif self.direction == "down":  
+        elif self._direction == "down":  
             self._yPos += self._speed
 
     def get_rect(self):
