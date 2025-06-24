@@ -268,7 +268,7 @@ screenHeight = 480
 surface = pygame.display.set_mode((screenWidth, screenHeight))
 
 # Load and scale the background image for the game
-BG = pygame.image.load("Intro/libraryofimages/water.jpg").convert() 
+BG = pygame.image.load("Intro/libraryofimages/water.jpeg").convert() 
 BG = pygame.transform.scale(BG, (screenWidth, screenHeight))  
 
 # Set up the game clock for controlling frame rate (FPS)
@@ -449,6 +449,6 @@ while running:
     # Draw everything and update display
     GameObject.Draw(surface)
     pygame.display.update()
-    clock.tick(cSpeed)  # T FPS
+    clock.tick(cSpeed)  # FPS
 
-pygame.quit()  # Clean up and close the game window
+pygame.quit()  # Close window
